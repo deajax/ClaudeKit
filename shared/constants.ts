@@ -6,11 +6,11 @@ export const BUILTIN_PROVIDERS: Omit<Provider, 'AUTH_TOKEN'>[] = [
     {
         name: '阿里云百炼',
         icon: '',
-        BASE_URL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-        model: 'qwen-plus',
-        opusModel: 'qwen-max',
-        sonnetModel: 'qwen-plus',
-        haikuModel: 'qwen-turbo'
+        BASE_URL: 'https://dashscope.aliyuncs.com/apps/anthropic',
+        model: 'qwen3.6-plus',
+        opusModel: 'qwen3.6-max-preview',
+        sonnetModel: 'qwen3.6-flash',
+        haikuModel: 'qwen3-coder-next'
     },
     {
         name: 'DeepSeek',
@@ -18,7 +18,7 @@ export const BUILTIN_PROVIDERS: Omit<Provider, 'AUTH_TOKEN'>[] = [
         BASE_URL: 'https://api.deepseek.com/anthropic',
         model: 'deepseek-v4-pro',
         opusModel: 'deepseek-v4-pro',
-        sonnetModel: 'deepseek-v4',
+        sonnetModel: 'deepseek-v4-flash',
         haikuModel: 'deepseek-chat',
         thinkingSupported: true,
         balanceApi: 'https://api.deepseek.com/user/balance'
@@ -27,19 +27,28 @@ export const BUILTIN_PROVIDERS: Omit<Provider, 'AUTH_TOKEN'>[] = [
         name: 'OpenRouter',
         icon: '',
         BASE_URL: 'https://openrouter.ai/api',
-        model: 'anthropic/claude-sonnet-4',
-        opusModel: 'anthropic/claude-opus-4',
-        sonnetModel: 'anthropic/claude-sonnet-4',
-        haikuModel: 'anthropic/claude-haiku-4'
+        model: 'openrouter/free',
+        opusModel: 'anthropic/claude-opus-4.7',
+        sonnetModel: 'openai/gpt-5.5',
+        haikuModel: 'google/gemini-3.1-pro-preview'
     },
     {
         name: '硅基流动',
         icon: '',
-        BASE_URL: 'https://api.siliconflow.cn/v1',
-        model: 'Pro/deepseek-ai/DeepSeek-V4-Pro',
-        opusModel: 'Pro/deepseek-ai/DeepSeek-V4-Pro',
-        sonnetModel: 'Pro/deepseek-ai/DeepSeek-V4',
-        haikuModel: 'Pro/deepseek-ai/DeepSeek-V3'
+        BASE_URL: 'https://api.siliconflow.cn/',
+        model: 'Qwen/Qwen3-8B',
+        opusModel: 'Pro/zai-org/GLM-5.1',
+        sonnetModel: 'Pro/moonshotai/Kimi-K2.6',
+        haikuModel: 'MiniMaxAI/MiniMax-M2.5'
+    },
+    {
+        name: 'Kimi 月之暗面',
+        icon: '',
+        BASE_URL: 'https://api.moonshot.cn/anthropic',
+        model: 'kimi-k2.6',
+        opusModel: 'kimi-k2.6',
+        sonnetModel: 'kimi-k2.5',
+        haikuModel: ''
     }
 ]
 
