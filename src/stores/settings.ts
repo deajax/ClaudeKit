@@ -61,6 +61,11 @@ export const useSettingsStore = defineStore('settings', () => {
         persist()
     }
 
+    function updateWizardCompleted(completed: boolean): void {
+        settings.value.wizardCompleted = completed
+        persist()
+    }
+
     async function resetToDefaults(): Promise<void> {
         settings.value = { ...DEFAULT_SETTINGS }
         await persist()
@@ -78,6 +83,7 @@ export const useSettingsStore = defineStore('settings', () => {
         updateScrollback,
         updateShell,
         updateLoginMode,
+        updateWizardCompleted,
         resetToDefaults
     }
 })

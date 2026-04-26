@@ -2,15 +2,6 @@
 import { ref, onMounted, computed } from 'vue'
 import { getOs } from '@/lib/utils'
 import { getEnv, saveEnv } from '@/lib/db'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter
-} from '@/components/ui/dialog'
 
 const emit = defineEmits<{
     close: []
@@ -135,42 +126,42 @@ onMounted(() => {
 
 <template>
     <div class="env-manager p-4 space-y-4">
-        <h3 class="text-sm font-medium text-slate-200 mb-4">环境变量管理</h3>
+        <h3 class="text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-4">环境变量管理</h3>
 
         <!-- macOS 代码编辑器 -->
         <div v-if="os === 'mac'">
             <div class="flex items-center justify-between mb-2">
-                <span class="text-xs text-slate-400">{{ shellConfigPath || 'Shell 配置文件' }}</span>
-                <Button size="sm" class="text-xs" @click="saveShellConfig">
+                <span class="text-xs text-neutral-500 dark:text-neutral-400">{{ shellConfigPath || 'Shell 配置文件' }}</span>
+                <a-button  type="primary" class="text-xs" @click="saveShellConfig">
                     保存
-                </Button>
+                </a-button>
             </div>
             <textarea
                 v-model="shellConfigContent"
                 rows="20"
                 spellcheck="false"
-                class="w-full bg-slate-950 border border-slate-700 rounded p-3 text-sm text-slate-200 font-mono outline-none focus:border-blue-500 resize-none"
+                class="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-700 rounded p-3 text-sm text-neutral-700 dark:text-neutral-200 font-mono outline-none focus:border-blue-500 resize-none"
             />
         </div>
 
         <!-- Windows 可视化表格 -->
         <div v-else>
             <div class="flex items-center justify-between mb-2">
-                <span class="text-xs text-slate-400">用户环境变量</span>
+                <span class="text-xs text-neutral-500 dark:text-neutral-400">用户环境变量</span>
                 <div class="flex gap-2">
-                    <Button variant="secondary" size="sm" class="text-xs" @click="addRow">
+                    <a-button  class="text-xs" @click="addRow">
                         + 添加变量
-                    </Button>
-                    <Button size="sm" class="text-xs" @click="saveEnvTable">
+                    </a-button>
+                    <a-button  type="primary" class="text-xs" @click="saveEnvTable">
                         保存
-                    </Button>
+                    </a-button>
                 </div>
             </div>
-            <table class="w-full text-xs border border-slate-700 rounded overflow-hidden">
+            <table class="w-full text-xs border border-neutral-200 dark:border-neutral-700 rounded overflow-hidden">
                 <thead>
-                    <tr class="bg-slate-800">
-                        <th class="px-3 py-2 text-left text-slate-400 w-1/2">变量名</th>
-                        <th class="px-3 py-2 text-left text-slate-400 w-1/2">变量值</th>
+                    <tr class="bg-gray-100 dark:bg-neutral-800">
+                        <th class="px-3 py-2 text-left text-neutral-500 dark:text-neutral-400 w-1/2">变量名</th>
+                        <th class="px-3 py-2 text-left text-neutral-500 dark:text-neutral-400 w-1/2">变量值</th>
                         <th class="px-3 py-2 w-12" />
                     </tr>
                 </thead>
@@ -178,30 +169,30 @@ onMounted(() => {
                     <tr
                         v-for="(row, i) in envRows"
                         :key="i"
-                        class="border-t border-slate-700"
+                        class="border-t border-neutral-200 dark:border-neutral-700"
                     >
                         <td class="px-2 py-1">
-                            <Input
-                                v-model="row.key"
-                                class="bg-transparent border-0 text-slate-200 h-7 text-xs"
+                            <a-input
+                                v-model:value="row.key"
+                                                                class="bg-transparent border-0 text-neutral-700 dark:text-neutral-200 h-7 text-xs"
                                 placeholder="变量名"
                             />
                         </td>
                         <td class="px-2 py-1">
-                            <Input
-                                v-model="row.value"
-                                class="bg-transparent border-0 text-slate-200 h-7 text-xs"
+                            <a-input
+                                v-model:value="row.value"
+                                                                class="bg-transparent border-0 text-neutral-700 dark:text-neutral-200 h-7 text-xs"
                                 placeholder="变量值"
                             />
                         </td>
                         <td class="px-2 py-1 text-center">
-                            <Button variant="ghost" size="sm" class="text-slate-500 hover:text-red-400 h-auto px-1" @click="removeRow(i)">
+                            <a-button type="text"  class="text-neutral-400 dark:text-neutral-500 h-auto px-1" @click="removeRow(i)">
                                 ×
-                            </Button>
+                            </a-button>
                         </td>
                     </tr>
                     <tr v-if="envRows.length === 0">
-                        <td colspan="3" class="px-3 py-4 text-center text-slate-500">
+                        <td colspan="3" class="px-3 py-4 text-center text-neutral-400 dark:text-neutral-500">
                             暂无环境变量
                         </td>
                     </tr>
@@ -210,30 +201,31 @@ onMounted(() => {
         </div>
 
         <!-- 通用：直接编辑 Shell 配置文件 -->
-        <div class="pt-3 border-t border-slate-700">
-            <Button variant="secondary" size="sm" class="text-xs" @click="loadProfileForEdit">
+        <div class="pt-3 border-t border-neutral-200 dark:border-neutral-700">
+            <a-button  class="text-xs" @click="loadProfileForEdit">
                 编辑 Shell 配置文件
-            </Button>
+            </a-button>
         </div>
 
         <!-- Shell 配置文件编辑弹窗 -->
-        <Dialog :open="showProfileEditor" @update:open="(v: boolean) => showProfileEditor = v">
-            <DialogContent class="sm:max-w-[600px] max-h-[80vh] flex flex-col bg-slate-800 border-slate-700 text-slate-200">
-                <DialogHeader class="flex-shrink-0">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs text-slate-400">{{ shellProfilePath }}</span>
-                        <Button size="sm" class="text-xs" @click="saveProfile">保存</Button>
-                    </div>
-                </DialogHeader>
-                <div class="flex-1 min-h-0">
-                    <textarea
-                        v-model="profileContent"
-                        rows="20"
-                        spellcheck="false"
-                        class="w-full h-full min-h-64 bg-slate-950 border-0 p-4 text-sm text-slate-200 font-mono outline-none resize-none rounded"
-                    />
-                </div>
-            </DialogContent>
-        </Dialog>
+        <a-modal
+            v-model:open="showProfileEditor"
+            :footer="null"
+            width="600px"
+            @cancel="() => showProfileEditor = false"
+        >
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs text-neutral-500 dark:text-neutral-400">{{ shellProfilePath }}</span>
+                <a-button  type="primary" class="text-xs" @click="saveProfile">保存</a-button>
+            </div>
+            <div class="min-h-64">
+                <textarea
+                    v-model="profileContent"
+                    rows="20"
+                    spellcheck="false"
+                    class="w-full h-full min-h-64 bg-white dark:bg-neutral-950 border-0 p-4 text-sm text-neutral-700 dark:text-neutral-200 font-mono outline-none resize-none rounded"
+                />
+            </div>
+        </a-modal>
     </div>
 </template>

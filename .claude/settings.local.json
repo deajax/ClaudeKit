@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\deajax\\\\工作\\\\claude-cli-desktop\" -Depth 1 -Name)",
+      "Bash(Sort-Object)",
+      "Bash(npm install *)",
+      "Bash(npx electron-vite *)",
+      "Bash(node -e ' *)",
+      "Bash(npm run *)",
+      "WebSearch",
+      "Bash(npx vue-tsc *)"
+    ]
+  }
+}

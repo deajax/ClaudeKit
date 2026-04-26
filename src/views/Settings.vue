@@ -2,17 +2,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
 import { storeToRefs } from 'pinia'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectItemText,
-    SelectTrigger,
-    SelectValue
-} from '@/components/ui/select'
 
 const emit = defineEmits<{
     close: []
@@ -130,19 +119,19 @@ function onOpenRepo(): void {
 
 <template>
     <div class="settings-panel p-4 space-y-5">
-        <h3 class="text-sm font-medium text-slate-200 mb-4">设置</h3>
+        <h3 class="text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-4">设置</h3>
 
         <!-- 主题 -->
         <div class="flex items-center justify-between">
-            <span class="text-xs text-slate-400">主题</span>
-            <Button variant="secondary" size="sm" class="text-xs" @click="onToggleTheme">
+            <span class="text-xs text-neutral-500 dark:text-neutral-400">主题</span>
+            <a-button  class="text-xs" @click="onToggleTheme">
                 {{ settings.theme === 'dark' ? '🌙 深色' : '☀️ 浅色' }}
-            </Button>
+            </a-button>
         </div>
 
         <!-- 字体大小 -->
         <div class="flex items-center justify-between">
-            <span class="text-xs text-slate-400">终端字号</span>
+            <span class="text-xs text-neutral-500 dark:text-neutral-400">终端字号</span>
             <input
                 type="range"
                 min="10"
@@ -151,121 +140,104 @@ function onOpenRepo(): void {
                 class="w-32"
                 @change="onFontSizeChange"
             />
-            <span class="text-xs text-slate-300 w-8">{{ settings.fontSize }}px</span>
+            <span class="text-xs text-neutral-600 dark:text-neutral-300 w-8">{{ settings.fontSize }}px</span>
         </div>
 
         <!-- 字体 -->
         <div>
-            <label class="block text-xs text-slate-400 mb-1">终端字体</label>
-            <Input
-                v-model="fontFamily"
-                class="bg-slate-900 border-slate-700 text-slate-200 text-xs h-8"
+            <label class="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">终端字体</label>
+            <a-input
+                v-model:value="fontFamily"
+                                class="bg-white dark:bg-neutral-900 text-xs h-8"
             />
         </div>
 
         <!-- 回滚缓冲 -->
         <div class="flex items-center justify-between">
-            <span class="text-xs text-slate-400">回滚缓冲</span>
-            <Select v-model="scrollback">
-                <SelectTrigger class="w-40 h-8 text-xs bg-slate-900 border-slate-700 text-slate-200">
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent class="bg-slate-800 border-slate-700 text-slate-200">
-                    <SelectGroup>
-                        <SelectItem :value="500" class="text-xs"><SelectItemText>500 行</SelectItemText></SelectItem>
-                        <SelectItem :value="1000" class="text-xs"><SelectItemText>1000 行</SelectItemText></SelectItem>
-                        <SelectItem :value="5000" class="text-xs"><SelectItemText>5000 行</SelectItemText></SelectItem>
-                        <SelectItem :value="10000" class="text-xs"><SelectItemText>10000 行</SelectItemText></SelectItem>
-                    </SelectGroup>
-                </SelectContent>
-            </Select>
+            <span class="text-xs text-neutral-500 dark:text-neutral-400">回滚缓冲</span>
+            <a-select v-model:value="scrollback" class="w-40" >
+                <a-select-option :value="500">500 行</a-select-option>
+                <a-select-option :value="1000">1000 行</a-select-option>
+                <a-select-option :value="5000">5000 行</a-select-option>
+                <a-select-option :value="10000">10000 行</a-select-option>
+            </a-select>
         </div>
 
         <!-- Shell 类型 -->
         <div>
-            <label class="block text-xs text-slate-400 mb-1">Shell 类型</label>
-            <Select v-model="shell">
-                <SelectTrigger class="w-full h-8 text-xs bg-slate-900 border-slate-700 text-slate-200">
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent class="bg-slate-800 border-slate-700 text-slate-200">
-                    <SelectGroup>
-                        <SelectItem value="" class="text-xs"><SelectItemText>系统默认</SelectItemText></SelectItem>
-                        <SelectItem value="/bin/zsh" class="text-xs"><SelectItemText>zsh</SelectItemText></SelectItem>
-                        <SelectItem value="/bin/bash" class="text-xs"><SelectItemText>bash</SelectItemText></SelectItem>
-                        <SelectItem value="powershell.exe" class="text-xs"><SelectItemText>PowerShell</SelectItemText></SelectItem>
-                    </SelectGroup>
-                </SelectContent>
-            </Select>
+            <label class="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Shell 类型</label>
+            <a-select v-model:value="shell" class="w-full" >
+                <a-select-option value="">系统默认</a-select-option>
+                <a-select-option value="/bin/zsh">zsh</a-select-option>
+                <a-select-option value="/bin/bash">bash</a-select-option>
+                <a-select-option value="powershell.exe">PowerShell</a-select-option>
+            </a-select>
         </div>
 
-        <hr class="border-slate-700" />
+        <hr class="border-neutral-200 dark:border-neutral-700" />
 
         <!-- 免登录配置 -->
         <div>
             <div class="flex items-center justify-between mb-2">
-                <span class="text-xs text-slate-400">Claude Code 免登录</span>
+                <span class="text-xs text-neutral-500 dark:text-neutral-400">Claude Code 免登录</span>
                 <span
                     class="text-xs px-2 py-0.5 rounded"
-                    :class="loginConfigured ? 'bg-green-900/50 text-green-400' : 'bg-yellow-900/50 text-yellow-400'"
+                    :class="loginConfigured ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400' : 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400'"
                 >
                     {{ loginConfigured ? '已配置' : '未配置' }}
                 </span>
             </div>
-            <Button
+            <a-button
                 v-if="!loginConfigured"
-                class="w-full text-xs"
-                size="sm"
+                type="primary"
+                                class="w-full"
                 @click="onSetupLogin"
             >
                 一键配置免登录
-            </Button>
-            <p class="text-xs text-slate-500 mt-1">
+            </a-button>
+            <p class="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
                 在 ~/.claude.json 中设置 hasCompletedOnboarding = true，需授权提权操作
             </p>
         </div>
 
-        <hr class="border-slate-700" />
+        <hr class="border-neutral-200 dark:border-neutral-700" />
 
         <!-- 重置 -->
         <div class="space-y-2">
-            <Button
-                variant="secondary"
-                size="sm"
-                class="w-full justify-start text-xs hover:bg-red-600/50"
+            <a-button
+                                block
+                class="text-left hover:bg-red-100 dark:hover:bg-red-600/50"
                 @click="onResetSettings"
             >
                 🔄 重置设置
-            </Button>
-            <Button
-                variant="secondary"
-                size="sm"
-                class="w-full justify-start text-xs hover:bg-red-600/50"
+            </a-button>
+            <a-button
+                                block
+                class="text-left hover:bg-red-100 dark:hover:bg-red-600/50"
                 @click="onResetProviders"
             >
                 🔄 重置模型商
-            </Button>
-            <Button
-                variant="secondary"
-                size="sm"
-                class="w-full justify-start text-xs hover:bg-red-600/50"
+            </a-button>
+            <a-button
+                                block
+                class="text-left hover:bg-red-100 dark:hover:bg-red-600/50"
                 @click="onResetTasks"
             >
                 🔄 重置任务
-            </Button>
+            </a-button>
         </div>
 
-        <hr class="border-slate-700" />
+        <hr class="border-neutral-200 dark:border-neutral-700" />
 
         <!-- 链接 -->
         <div class="space-y-1">
-            <Button variant="link" size="sm" class="text-xs text-blue-400 hover:text-blue-300 p-0 h-auto" @click="onOpenRepo">
+            <a-button type="link"  class="text-xs p-0 h-auto" @click="onOpenRepo">
                 📦 仓库地址
-            </Button>
+            </a-button>
             <br />
-            <Button variant="link" size="sm" class="text-xs text-blue-400 hover:text-blue-300 p-0 h-auto" @click="onOpenIssues">
+            <a-button type="link"  class="text-xs p-0 h-auto" @click="onOpenIssues">
                 🐛 提 Issues
-            </Button>
+            </a-button>
         </div>
     </div>
 </template>

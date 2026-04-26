@@ -190,6 +190,17 @@ export function registerEnvIPC(): void {
         }
     })
 
+    // ---- system:check-git ----
+    ipcMain.handle('system:check-git', async () => {
+        try {
+            const { execSync } = await import('child_process')
+            const version = execSync('git --version', { encoding: 'utf-8', timeout: 5000 }).trim()
+            return { success: true, version }
+        } catch {
+            return { success: false, version: '未安装' }
+        }
+    })
+
     // ---- system:install-claude ----
     ipcMain.handle('system:install-claude', async () => {
         try {
@@ -200,6 +211,52 @@ export function registerEnvIPC(): void {
                 stdio: 'pipe'
             })
             return { success: true, output }
+        } catch (e) {
+            return { success: false, error: (e as Error).message }
+        }
+    })
+
+    // ---- system:test-provider — 测试模型商连通性 ----
+    ipcMain.handle('system:test-provider', async (_event, baseUrl: string, authToken: string, model: string, balanceApi?: string) => {
+        try {
+            if (balanceApi) {
+                const resp = await fetch(balanceApi, {
+                    headers: { Authorization: `Bearer ${authToken}` },
+                    signal: AbortSignal.timeout(10000)
+                })
+                if (resp.status === 401 || resp.status === 403) {
+                    return { success: false, error: '认证失败（401/403），请检查 AUTH_TOKEN' }
+                }
+                if (!resp.ok) {
+                    return { success: false, error: `余额接口返回 ${resp.status}，请检查 network` }
+                }
+                return { success: true }
+            }
+
+            const apiUrl = baseUrl.replace(/\/+$/, '') + '/v1/messages'
+            const resp = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${authToken}`,
+                    'x-api-key': authToken
+                },
+                body: JSON.stringify({
+                    model: model || 'claude-sonnet-4-6',
+                    max_tokens: 1,
+                    messages: [{ role: 'user', content: '.' }]
+                }),
+                signal: AbortSignal.timeout(15000)
+            })
+
+            // Anthropic API 语义：200/400 表示 auth 已通过（400 是 body 参数问题）
+            if (resp.status === 200 || resp.status === 400) {
+                return { success: true }
+            }
+            if (resp.status === 401 || resp.status === 403) {
+                return { success: false, error: '认证失败（401/403），请检查 AUTH_TOKEN' }
+            }
+            return { success: false, error: `服务器返回 ${resp.status}，请检查 BASE_URL 和网络连接` }
         } catch (e) {
             return { success: false, error: (e as Error).message }
         }

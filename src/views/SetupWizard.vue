@@ -1,7 +1,19 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, h, type VNode } from 'vue'
 import { getOs } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+import { useSettingsStore } from '@/stores/settings'
+import { TypographyParagraph } from 'ant-design-vue'
+import {
+    RiTerminalBoxLine,
+    RiStarLine,
+    RiCodeLine,
+    RiRobot2Line,
+    RiSunLine,
+    RiMoonLine,
+    RiCheckboxCircleLine,
+    RiAddLine,
+} from '@remixicon/vue'
+import { CheckCircleFilled } from '@ant-design/icons-vue'
 
 const emit = defineEmits<{
     close: []
@@ -9,52 +21,87 @@ const emit = defineEmits<{
 }>()
 
 const os = getOs()
+const settingsStore = useSettingsStore()
 
 // ---- Steps ----
 const steps = [
-    { key: 'env-check', title: '环境检测', icon: '🔍' },
-    { key: 'install-claude', title: '安装 Claude Code', icon: '📦' },
-    { key: 'config-provider', title: '配置模型商', icon: '⚙️' },
-    { key: 'login-config', title: '免登录配置', icon: '🔑' },
-    { key: 'done', title: '完成', icon: '✅' }
+    { key: 'env-check', title: '环境检测' },
+    { key: 'install-claude', title: '安装 Claude Code' },
+    { key: 'config-provider', title: '配置模型商' },
+    { key: 'login-config', title: '免登录配置' },
+    { key: 'done', title: '完成' }
 ]
 const currentStep = ref(0)
 
-// Step 1 — 环境检测
+// ---- Step 1: 环境检测 ----
+interface EnvCheckItem {
+    name: string
+    key: string
+    version: string
+    available: boolean
+    checking: boolean
+    installGuide: string | VNode
+    icon: object
+}
+
+const envItems = reactive<EnvCheckItem[]>([
+    { name: 'Node.js', key: 'node', version: '', available: false, checking: true, installGuide: h('p', null, ['请访问 ', h('a', { href: 'https://nodejs.org', target: '_blank' }, 'https://nodejs.org'), ' 下载安装 LTS 版本']), icon: RiCodeLine },
+    { name: 'npm', key: 'npm', version: '', available: false, checking: true, installGuide: '安装 Node.js 后自动包含 npm，无需单独安装', icon: RiTerminalBoxLine },
+    { name: 'Claude Code', key: 'claude', version: '', available: false, checking: true, installGuide: h('div', { class: 'paragraph-code' }, [h(TypographyParagraph, { copyable: { text: 'npm install -g @anthropic-ai/claude-code' } }, { default: () => h('pre', 'npm install -g @anthropic-ai/claude-code') }), h('p', { class: 'mt-2' }, '确保 Node.js 已安装后，在终端中执行以上命令。')]), icon: RiRobot2Line }
+])
+const envColumns = [
+    { title: '检测项目', dataIndex: 'name', key: 'name' },
+    { title: '版本', key: 'version', className: '' },
+    { title: '状态', key: 'status', className: '' }
+]
+
 const shellType = ref('')
-const nodeVersion = ref('')
-const npmReady = ref(false)
-const envCheckDone = ref(false)
+const installGuideItem = ref<EnvCheckItem | null>(null)
+const showGuideModal = ref(false)
+
+function showInstallGuide(item: EnvCheckItem): void {
+    installGuideItem.value = item
+    showGuideModal.value = true
+}
+
+function closeInstallGuide(): void {
+    showGuideModal.value = false
+}
 
 async function runEnvCheck(): Promise<void> {
     try {
-        const result = await window.electronAPI.invoke<{
-            success: boolean
-            platform: string
-        }>('system:get-os')
+        const result = await window.electronAPI.invoke<{ success: boolean; platform: string }>('system:get-os')
         shellType.value = os === 'mac' ? 'zsh' : os === 'win' ? 'powershell' : 'bash'
     } catch {
         shellType.value = '未知'
     }
 
-    try {
-        const result = await window.electronAPI.invoke<{ success: boolean; version: string }>('system:check-node')
-        nodeVersion.value = result.success ? result.version : '未安装'
-    } catch {
-        nodeVersion.value = '未安装'
+    async function checkOne(key: string, channel: string): Promise<{ key: string; success: boolean; version: string }> {
+        try {
+            const r = await window.electronAPI.invoke<{ success: boolean; version: string }>(channel as any)
+            return { key, success: r.success, version: r.version }
+        } catch {
+            return { key, success: false, version: '检测失败' }
+        }
     }
 
-    try {
-        const result = await window.electronAPI.invoke<{ success: boolean; version: string }>('system:check-npm')
-        npmReady.value = result.success
-    } catch {
-        npmReady.value = false
-    }
+    const results = await Promise.all([
+        checkOne('node', 'system:check-node'),
+        checkOne('npm', 'system:check-npm'),
+        checkOne('claude', 'system:check-claude')
+    ])
 
-    envCheckDone.value = true
+    for (const r of results) {
+        const item = envItems.find(i => i.key === r.key)
+        if (item) {
+            item.version = r.version ?? ''
+            item.available = r.success
+            item.checking = false
+        }
+    }
 }
 
-// Step 2 — 安装 Claude Code
+// ---- Step 2: 安装 Claude Code ----
 const claudeInstalled = ref(false)
 const claudeVersion = ref('')
 const installingClaude = ref(false)
@@ -89,10 +136,7 @@ async function installClaude(): Promise<void> {
     installingClaude.value = false
 }
 
-// Step 3 — 配置模型商
-// (handled by existing ProviderConfig, placeholder in wizard)
-
-// Step 4 — 免登录配置
+// ---- Step 4: 免登录配置 ----
 const loginConfigured = ref(false)
 const loginConfiguring = ref(false)
 
@@ -106,18 +150,13 @@ async function checkLoginStatus(): Promise<void> {
 }
 
 async function setupLogin(): Promise<void> {
-    const confirmed = confirm(
-        '即将在 ~/.claude.json 中设置 hasCompletedOnboarding = true。\n\n此操作可能需要系统权限授权，是否继续？'
-    )
-    if (!confirmed) return
-
     loginConfiguring.value = true
     try {
         const result = await window.electronAPI.invoke<{ success: boolean; error?: string }>('config:write', {
             hasCompletedOnboarding: true
         }, true)
         if (result.success) {
-            loginConfigured.value = true
+            await checkLoginStatus()
         } else {
             alert('配置失败: ' + (result.error ?? '未知错误'))
         }
@@ -127,32 +166,85 @@ async function setupLogin(): Promise<void> {
     loginConfiguring.value = false
 }
 
-// Navigation
-function nextStep(): void {
-    if (currentStep.value < steps.length - 1) {
-        currentStep.value++
+// ---- 主题选择 ----
+const selectedTheme = ref<'light' | 'dark'>(settingsStore.settings.theme === 'dark' ? 'dark' : 'light')
+
+// ---- 模型商配置 ----
+import { BUILTIN_PROVIDERS } from '../../shared/constants'
+import { generateId } from '@/lib/utils'
+import { useProviderStore } from '@/stores/providers'
+import type { Provider } from '../../shared/types'
+import ProviderFormModal from '@/components/ProviderFormModal.vue'
+
+const providerStore2 = useProviderStore()
+const builtinCards = computed(() =>
+    BUILTIN_PROVIDERS.map(builtin => {
+        const saved = providerStore2.providers.find(p => p.BASE_URL === builtin.BASE_URL)
+        return {
+            ...builtin,
+            icon: saved?.icon || builtin.icon,
+            id: saved?.id ?? '',
+            AUTH_TOKEN: saved?.AUTH_TOKEN ?? '',
+            saved: verifiedProviders.value.has(builtin.BASE_URL) || !!(saved?.AUTH_TOKEN)
+        }
+    })
+)
+
+const showProviderModal = ref(false)
+const editingProvider = ref<(Provider & { id: string }) | null>(null)
+const verifiedProviders = ref<Set<string>>(new Set())
+
+function openEditCard(card: (typeof BUILTIN_PROVIDERS[number]) & { id: string; AUTH_TOKEN: string; saved: boolean }): void {
+    if (card.saved) {
+        const saved = providerStore2.providers.find(p => p.BASE_URL === card.BASE_URL)
+        editingProvider.value = saved ?? null
+    } else {
+        editingProvider.value = { id: '', ...card } as Provider & { id: string }
     }
+    showProviderModal.value = true
+}
+
+function openAddProvider(): void {
+    editingProvider.value = null
+    showProviderModal.value = true
+}
+
+function closeProviderModal(): void {
+    showProviderModal.value = false
+    editingProvider.value = null
+}
+
+async function onSaveProvider(data: Provider, verified: boolean): Promise<void> {
+    const saveId = data.key || generateId()
+    const existing = editingProvider.value?.id
+        ? providerStore2.providers.find(p => p.id === editingProvider.value!.id)
+        : providerStore2.providers.find(p => p.BASE_URL === data.BASE_URL)
+    if (existing) {
+        await providerStore2.update(existing.id, data)
+        if (verified) verifiedProviders.value.add(data.BASE_URL)
+    } else {
+        await providerStore2.add({ id: saveId, ...data })
+        if (verified) verifiedProviders.value.add(data.BASE_URL)
+    }
+    showProviderModal.value = false
+    editingProvider.value = null
+}
+
+// ---- 导航 ----
+function nextStep(): void {
+    if (currentStep.value < steps.length - 1) currentStep.value++
 }
 
 function prevStep(): void {
-    if (currentStep.value > 0) {
-        currentStep.value--
-    }
+    if (currentStep.value > 0) currentStep.value--
 }
 
 function skipWizard(): void {
-    emit('close')
+    nextStep()
 }
 
 function finishWizard(): void {
     emit('complete')
-}
-
-const skipWizardPermanently = ref(false)
-
-function toggleSkip(): void {
-    skipWizardPermanently.value = !skipWizardPermanently.value
-    // Save preference to settings
 }
 
 onMounted(() => {
@@ -163,137 +255,226 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="setup-wizard p-6 space-y-6">
-        <h2 class="text-base font-medium text-slate-200 text-center">欢迎使用 Claude CLI Desktop</h2>
-
-        <!-- 步骤条 -->
-        <div class="flex items-center justify-center gap-1">
-            <template v-for="(step, i) in steps" :key="step.key">
-                <div class="flex items-center">
-                    <div
-                        class="w-8 h-8 rounded-full flex items-center justify-center text-xs transition-colors"
-                        :class="i === currentStep
-                            ? 'bg-blue-600 text-white'
-                            : i < currentStep
-                                ? 'bg-green-700 text-white'
-                                : 'bg-slate-700 text-slate-500'"
-                    >
-                        {{ i < currentStep ? '✓' : step.icon }}
-                    </div>
-                    <span
-                        v-if="i < steps.length - 1"
-                        class="w-8 h-px"
-                        :class="i < currentStep ? 'bg-green-700' : 'bg-slate-700'"
-                    />
-                </div>
-            </template>
+    <div class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-neutral-100 dark:bg-neutral-900">
+        <!-- 标题 & 步骤条 -->
+        <div class="mb-8 w-4xl">
+            <a-typography-title :level="2" class="text-center mb-8!">
+                欢迎使用 Claude CLI Desktop
+            </a-typography-title>
+            <a-steps :current="currentStep" :items="steps" label-placement="vertical" />
         </div>
 
-        <!-- Step 内容 -->
-        <div class="min-h-48 bg-slate-700/20 rounded p-4 text-sm">
+        <div class="bg-white dark:bg-[#141414] rounded-xl shadow-xl w-xl max-h-[85vh] min-h min-h-102 overflow-y-auto flex flex-col">
+            <!-- 步骤内容 -->
+            <div class="flex-1 p-6 overflow-y-auto min-h-0">
+                <!-- Step 0: 环境检测 -->
+                <div v-if="currentStep === 0" class="space-y-4">
+                    <a-typography-title :level="4" class="text-center">
+                        环境检测
+                    </a-typography-title>
+                    <a-table :dataSource="envItems" :columns="envColumns" :pagination="false" rowKey="key">
+                        <template #title>
+                            <div class="flex items-center gap-2 -ml-3">
+                                <RiTerminalBoxLine />
+                                <span>Shell 类型：{{ shellType || '检测中...' }}</span>
+                            </div>
+                        </template>
+                        <template #bodyCell="{ column, record }">
+                            <template v-if="column.key === 'name'">
+                                <div class="flex items-center gap-2">
+                                    <component :is="record.icon" />
+                                    <span>{{ record.name }}</span>
+                                </div>
+                            </template>
+                            <template v-else-if="column.key === 'version'">
+                                <template v-if="record.checking">
+                                    <span class="">检测中...</span>
+                                </template>
+                                <template v-else-if="record.available">
+                                    <span class="">{{ record.version }}</span>
+                                </template>
+                                <template v-else>
+                                    <a-button @click="showInstallGuide(record)">
+                                        安装
+                                    </a-button>
+                                </template>
+                            </template>
+                            <template v-else-if="column.key === 'status'">
+                                <template v-if="record.checking">
+                                    <span class="">--</span>
+                                </template>
+                                <template v-else-if="record.available">
+                                    <span class="flex items-center gap-1 text-green-600">
+                                        <RiCheckboxCircleLine />
+                                        可用
+                                    </span>
+                                </template>
+                                <template v-else>
+                                    <span class="text-red-500">不可用</span>
+                                </template>
+                            </template>
+                        </template>
+                    </a-table>
+                </div>
 
-            <!-- Step 1: 环境检测 -->
-            <div v-if="currentStep === 0" class="space-y-3">
-                <h3 class="text-sm font-medium text-slate-200">环境检测</h3>
-                <div class="space-y-2 text-xs">
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Shell 类型</span>
-                        <span class="text-slate-200">{{ shellType || '检测中...' }}</span>
+                <!-- Step 1: 安装 Claude Code -->
+                <div v-if="currentStep === 1" class="space-y-3">
+                    <a-typography-title :level="4" class="text-center">
+                        安装 Claude Code
+                    </a-typography-title>
+
+                    <template v-if="!claudeInstallLog">
+                        <a-result v-if="claudeInstalled" status="success" title="Claude Code 已安装"
+                            :sub-title="claudeVersion" />
+                        <a-result v-else status="warning" title="未检测到 Claude Code" sub-title="请点击下方按钮自动安装，也可手动复制命令安装">
+                            <template #extra>
+                                <a-button type="primary" @click="installClaude">
+                                    一键安装 Claude Code
+                                </a-button>
+                                <div class="mt-4 text-xs">
+                                    <a-typography-text code copyable>
+                                        npm install -g @anthropic-ai/claude-code
+                                    </a-typography-text>
+                                </div>
+                            </template>
+                        </a-result>
+                    </template>
+                    <template v-else>
+                        <a-result :title="installingClaude ? '正在安装 Claude Code' : '安装成功'">
+                            <template #icon>
+                                <a-spin v-if="installingClaude" size="large" />
+                                <CheckCircleFilled v-else class="text-2xl text-green-500" />
+                            </template>
+                            <pre class="text-xs max-h-40 overflow-y-auto">{{ claudeInstallLog }}</pre>
+                        </a-result>
+                    </template>
+
+                </div>
+
+                <!-- Step 2: 配置模型商 -->
+                <div v-if="currentStep === 2" class="space-y-4">
+                    <a-typography-title :level="4" class="text-center">
+                        配置模型商
+                    </a-typography-title>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <div v-for="card in builtinCards" :key="card.name"
+                            class="relative flex flex-col items-center justify-center gap-2 p-4 rounded-md border cursor-pointer transition-all"
+                            :class="card.saved
+                                ? 'border-green-500/50 bg-green-500/5'
+                                : 'border-neutral-200 dark:border-neutral-600 hover:border-blue-500 bg-white dark:bg-white/5 hover:dark:bg-blue-500/10'"
+                            @click="openEditCard(card)">
+                            <div class="w-8 h-8 flex items-center justify-center">
+                                <img v-if="card.icon" :src="card.icon" class="block w-full h-full" />
+                                <span v-else>{{ card.name.charAt(0) }}</span>
+                            </div>
+                            <span class="font-semibold text-xs dark:text-neutral-200">{{ card.name }}</span>
+                            <a-tag v-if="card.saved" color="green" class="absolute top-1 right-1 m-0!">已配置</a-tag>
+                        </div>
+
+                        <div @click="openAddProvider"
+                            class="flex flex-col items-center justify-center gap-2 p-4 rounded-md border border-dashed border-neutral-300 dark:border-neutral-500 cursor-pointer hover:border-blue-500 bg-white dark:bg-white/5 hover:dark:bg-blue-500/10 transition-all min-h-[106px]">
+                            <span
+                                class="w-8 h-8 flex items-center justify-center bg-neutral-100 dark:bg-white/5 rounded-full">
+                                <RiAddLine />
+                            </span>
+                            <span class="text-xs">添加模型商</span>
+                        </div>
                     </div>
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Node.js 版本</span>
-                        <span class="text-slate-200">{{ nodeVersion || '检测中...' }}</span>
+                </div>
+
+                <!-- Step 3: 免登录配置 -->
+                <div v-if="currentStep === 3" class="space-y-3">
+                    <a-typography-title :level="4" class="text-center">
+                        Claude 免登录配置
+                    </a-typography-title>
+                    <a-result v-if="loginConfigured" status="success" title="免登录已配置" sub-title="已配置Claude免交互登录" />
+                    <div v-else class="space-y-3">
+                        <a-alert message="重要配置项"
+                            description="将在 ~/.claude.json 中设置 hasCompletedOnboarding = true，使 Claude Code 免交互登录。"
+                            type="info" show-icon class="mb-4!" />
+                        <a-button type="primary" :disabled="loginConfiguring" @click="setupLogin" block>
+                            {{ loginConfiguring ? '配置中...' : '一键配置免登录' }}
+                        </a-button>
                     </div>
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">npm</span>
-                        <span :class="npmReady ? 'text-green-400' : 'text-red-400'">
-                            {{ npmReady ? '可用' : '不可用' }}
-                        </span>
+                </div>
+
+                <!-- Step 4: 完成 -->
+                <div v-if="currentStep === 4" class="space-y-5 py-2">
+                    <a-result status="success" title="配置完成" sub-title="所有配置已完成，现在可以开始使用了！" />
+
+                    <!-- 主题选择 -->
+                    <div class="flex gap-3 justify-center">
+                        <button
+                            class="flex-1 max-w-36 px-4 py-3 rounded-lg border text-xs text-center transition-all cursor-pointer"
+                            :class="selectedTheme === 'light'
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                                : 'border-neutral-200 dark:border-neutral-600 hover:border-neutral-300 dark:hover:border-neutral-500 bg-white dark:bg-neutral-700/50'"
+                            @click="selectedTheme = 'light'; settingsStore.updateTheme('light')">
+                            <RiSunLine class="w-5 h-5 mx-auto mb-2" />
+                            <div class="font-medium text-neutral-700 dark:text-neutral-200">浅色模式</div>
+                        </button>
+                        <button
+                            class="flex-1 max-w-36 px-4 py-3 rounded-lg border text-xs text-center transition-all cursor-pointer"
+                            :class="selectedTheme === 'dark'
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                                : 'border-neutral-200 dark:border-neutral-600 hover:border-neutral-300 dark:hover:border-neutral-500 bg-white dark:bg-neutral-700/50'"
+                            @click="selectedTheme = 'dark'; settingsStore.updateTheme('dark')">
+                            <RiMoonLine class="w-5 h-5 mx-auto mb-2" />
+                            <div class="font-medium text-neutral-700 dark:text-neutral-200">深色模式</div>
+                        </button>
                     </div>
                 </div>
-            </div>
-
-            <!-- Step 2: 安装 Claude Code -->
-            <div v-if="currentStep === 1" class="space-y-3">
-                <h3 class="text-sm font-medium text-slate-200">Claude Code 安装</h3>
-                <div v-if="claudeInstalled" class="text-xs text-green-400">
-                    Claude Code 已安装 ({{ claudeVersion }})
-                </div>
-                <div v-else>
-                    <p class="text-xs text-slate-400 mb-2">未检测到 Claude Code，请点击下方按钮安装</p>
-                    <Button
-                        size="sm"
-                        :disabled="installingClaude"
-                        @click="installClaude"
-                    >
-                        {{ installingClaude ? '安装中...' : '一键安装 Claude Code' }}
-                    </Button>
-                    <pre
-                        v-if="claudeInstallLog"
-                        class="mt-2 bg-slate-950 p-2 rounded text-xs text-slate-400 max-h-24 overflow-y-auto"
-                    >{{ claudeInstallLog }}</pre>
-                </div>
-            </div>
-
-            <!-- Step 3: 配置模型商 -->
-            <div v-if="currentStep === 2" class="space-y-3">
-                <h3 class="text-sm font-medium text-slate-200">配置模型商</h3>
-                <p class="text-xs text-slate-400">
-                    请前往「更多 → 模型商配置」添加模型商及 API Key。
-                    已内置 4 家模型商：阿里云百炼、DeepSeek、OpenRouter、硅基流动
-                </p>
-                <p class="text-xs text-slate-500">此步骤可跳过，之后随时配置</p>
-            </div>
-
-            <!-- Step 4: 免登录配置 -->
-            <div v-if="currentStep === 3" class="space-y-3">
-                <h3 class="text-sm font-medium text-slate-200">免登录配置</h3>
-                <div v-if="loginConfigured" class="text-xs text-green-400">
-                    免登录已配置 (hasCompletedOnboarding = true)
-                </div>
-                <div v-else>
-                    <p class="text-xs text-slate-400 mb-2">
-                        将在 ~/.claude.json 中设置 hasCompletedOnboarding = true
-                    </p>
-                    <Button
-                        size="sm"
-                        :disabled="loginConfiguring"
-                        @click="setupLogin"
-                    >
-                        {{ loginConfiguring ? '配置中...' : '一键配置免登录' }}
-                    </Button>
-                </div>
-            </div>
-
-            <!-- Step 5: 完成 -->
-            <div v-if="currentStep === 4" class="space-y-3 text-center">
-                <h3 class="text-sm font-medium text-slate-200">🎉 配置完成</h3>
-                <p class="text-xs text-slate-400">
-                    所有配置已完成，建议重启程序使配置生效
-                </p>
-                <label class="flex items-center justify-center gap-2 text-xs text-slate-500 cursor-pointer">
-                    <input v-model="skipWizardPermanently" type="checkbox" @change="toggleSkip" />
-                    不再显示引导
-                </label>
             </div>
         </div>
 
         <!-- 导航按钮 -->
-        <div class="flex justify-between">
-            <Button variant="secondary" size="sm" class="text-xs" @click="skipWizard">
+        <div class="mt-8 w-xl shrink-0 flex items-center justify-between">
+            <a-button @click="skipWizard">
                 跳过
-            </Button>
+            </a-button>
             <div class="flex gap-2">
-                <Button v-if="currentStep > 0" variant="secondary" size="sm" class="text-xs" @click="prevStep">
+                <a-button v-if="currentStep > 0" @click="prevStep">
                     上一步
-                </Button>
-                <Button v-if="currentStep < steps.length - 1" size="sm" class="text-xs" @click="nextStep">
+                </a-button>
+                <a-button v-if="currentStep < steps.length - 1" type="primary" @click="nextStep">
                     下一步
-                </Button>
-                <Button v-if="currentStep === steps.length - 1" size="sm" class="bg-green-600 text-white hover:bg-green-500 text-xs" @click="finishWizard">
+                </a-button>
+                <a-button v-if="currentStep === steps.length - 1" type="primary"
+                    class="bg-green-600 hover:bg-green-500 border-green-600 text-xs" @click="finishWizard">
                     完成
-                </Button>
+                </a-button>
             </div>
         </div>
+
+        <!-- 安装指引弹窗 -->
+        <a-modal v-model:open="showGuideModal" :title="`${installGuideItem?.name ?? ''} — 安装方法`" centered
+            @cancel="closeInstallGuide">
+            <template v-if="installGuideItem && typeof installGuideItem.installGuide === 'string'">
+                {{ installGuideItem.installGuide }}
+            </template>
+            <div v-else-if="installGuideItem" class="">
+                <component :is="installGuideItem.installGuide" />
+            </div>
+            <template #footer>
+                <a-button type="primary" @click="closeInstallGuide">关闭</a-button>
+            </template>
+        </a-modal>
+
+        <!-- 模型商配置弹窗 -->
+        <ProviderFormModal :visible="showProviderModal" :provider="editingProvider" @close="closeProviderModal"
+            @save="onSaveProvider" />
     </div>
 </template>
+
+<style lang="less" scoped>
+:deep(.ant-steps) {
+    .ant-steps-item-icon {
+        margin-inline-start: 48px;
+    }
+
+    .ant-steps-item-content {
+        width: 134px;
+    }
+}
+</style>

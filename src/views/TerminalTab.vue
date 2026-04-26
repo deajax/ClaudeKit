@@ -5,7 +5,6 @@ import { FitAddon } from 'xterm-addon-fit'
 import 'xterm/css/xterm.css'
 import { useSettingsStore } from '@/stores/settings'
 import { storeToRefs } from 'pinia'
-import { Button } from '@/components/ui/button'
 
 const props = defineProps<{
     sessionId: string
@@ -41,7 +40,7 @@ async function createTerminal(): Promise<void> {
     }>('terminal:create', {
         cols: 120,
         rows: 30,
-        envVars: props.envVars,
+        envVars: { ...(props.envVars || {}) },
         shell: settings.value.shell || undefined
     })
 
@@ -60,7 +59,7 @@ async function createTerminal(): Promise<void> {
         theme: {
             background: settings.value.theme === 'dark' ? '#0f172a' : '#ffffff',
             foreground: settings.value.theme === 'dark' ? '#e2e8f0' : '#1e293b',
-            cursor: '#3b82f6',
+            cursor: settings.value.theme === 'dark' ? '#e2e8f0' : '#1e293b',
             selectionBackground: 'rgba(59, 130, 246, 0.3)'
         },
         scrollback: settings.value.scrollback,
@@ -203,35 +202,6 @@ defineExpose({
 
 <template>
     <div class="terminal-wrapper flex flex-col h-full w-full">
-        <!-- Claude 按钮栏 -->
-        <div class="claude-actions flex items-center gap-1.5 px-3 py-1 bg-slate-800 border-b border-slate-700 shrink-0">
-            <Button
-                size="sm"
-                :variant="claudeRunning ? 'ghost' : 'default'"
-                :disabled="claudeRunning"
-                @click="startClaude"
-            >
-                ▶ Claude
-            </Button>
-            <Button
-                v-if="claudeRunning"
-                size="sm"
-                variant="secondary"
-                class="bg-yellow-600/80 text-white hover:bg-yellow-600"
-                @click="restartClaude"
-            >
-                🔄 重启
-            </Button>
-            <Button
-                v-if="claudeRunning"
-                size="sm"
-                variant="destructive"
-                @click="stopClaude"
-            >
-                ⏹ 停止
-            </Button>
-        </div>
-
         <!-- xterm 容器 -->
         <div ref="terminalEl" class="terminal-el flex-1 min-h-0 px-2 py-1" />
     </div>
@@ -243,6 +213,9 @@ defineExpose({
 }
 .terminal-el :deep(.xterm-viewport) {
     scrollbar-width: thin;
+    scrollbar-color: #d1d5db #f3f4f6;
+}
+.dark .terminal-el :deep(.xterm-viewport) {
     scrollbar-color: #475569 #1e293b;
 }
 </style>

@@ -17,7 +17,7 @@ function writeWithSudo(filePath: string, content: string): Promise<void> {
             : `mv "${tmpPath}" "${filePath}"`
 
         sudo.exec(cmd, {
-            name: 'Claude CLI Desktop — 写入配置文件',
+            name: 'Claude CLI Desktop Config',
             icns: undefined
         }, (error, stdout, stderr) => {
             if (error) {

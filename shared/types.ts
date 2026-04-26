@@ -5,13 +5,13 @@
 export interface Provider {
     name: string
     icon: string // base64
+    key?: string  // 内置模型商标识（如 deepseek），用于稳定 ID
     BASE_URL: string
     AUTH_TOKEN: string
     model: string           // ANTHROPIC_MODEL — 默认模型（必填）
     opusModel?: string      // ANTHROPIC_DEFAULT_OPUS_MODEL — 覆盖旗舰模型
     sonnetModel?: string    // ANTHROPIC_DEFAULT_SONNET_MODEL — 覆盖高级模型
     haikuModel?: string     // ANTHROPIC_DEFAULT_HAIKU_MODEL — 覆盖初级模型
-    thinkingSupported?: boolean
     balanceApi?: string
 }
 
@@ -63,6 +63,7 @@ export interface AppSettings {
     fontSize: number
     fontFamily: string
     loginMode: string
+    wizardCompleted?: boolean
 }
 
 // ---------- 余额信息 ----------

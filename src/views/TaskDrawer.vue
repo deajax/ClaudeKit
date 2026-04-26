@@ -1,18 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { h, ref, computed, onMounted } from 'vue'
 import type { QuickTask } from '../../shared/types'
 import { getTasks, saveTasks } from '@/lib/db'
 import { generateId } from '@/lib/utils'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-    DialogClose
-} from '@/components/ui/dialog'
 
 const emit = defineEmits<{
     close: []
@@ -122,108 +112,52 @@ function onCloseEdit(): void {
 onMounted(() => {
     loadTasks()
 })
+
+import { RiSettings3Line, RiDeleteBinLine } from '@remixicon/vue'
 </script>
 
 <template>
-    <div class="task-drawer p-4 space-y-3">
+    <div class="task-drawer">
         <!-- 搜索栏 -->
-        <Input
-            v-model="searchQuery"
-            class="bg-slate-900 border-slate-700 text-slate-200 text-xs h-8"
-            placeholder="搜索命令或名称..."
-        />
-
-        <!-- 任务列表 -->
-        <div class="max-h-80 overflow-y-auto space-y-1">
-            <div
-                v-for="task in filteredTasks"
-                :key="task.id"
-                class="flex items-center group px-3 py-2 rounded hover:bg-slate-700/50 transition-colors cursor-pointer"
-                @click="onRunTask(task)"
-            >
-                <span class="w-3 h-3 rounded-full border border-slate-600 mr-2 shrink-0" />
-                <div class="flex-1 min-w-0">
-                    <div class="text-xs text-slate-200 truncate">{{ task.name }}</div>
-                    <div class="text-xs text-slate-500 truncate font-mono">{{ task.command }}</div>
-                </div>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    class="opacity-0 group-hover:opacity-100 px-1.5 h-auto text-slate-500 hover:text-slate-300"
-                    @click.stop="onEdit(task)"
-                >
-                    ⚙
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    class="opacity-0 group-hover:opacity-100 px-1.5 h-auto text-slate-500 hover:text-red-400"
-                    @click.stop="onDelete(task)"
-                >
-                    ×
-                </Button>
-            </div>
-            <div
-                v-if="filteredTasks.length === 0"
-                class="text-center py-6 text-xs text-slate-500"
-            >
-                暂无匹配任务
-            </div>
+        <div class="px-4 py-3 border-b border-b-neutral-200 dark:border-b-neutral-800">
+            <a-input v-model:value="searchQuery" class="bg-white dark:bg-neutral-900 text-xs h-8"
+                placeholder="搜索命令或名称..." />
         </div>
 
-        <!-- 添加按钮 -->
-        <Button
-            variant="secondary"
-            size="sm"
-            class="w-full"
-            @click="onAdd"
-        >
-            + 添加任务
-        </Button>
+        <!-- 任务列表 -->
+        <a-list class="max-h-50 overflow-y-auto" :data-source="filteredTasks" size="small" :locale="{ emptyText: '暂无匹配任务' }">
+            <template #renderItem="{ item }">
+                <a-list-item class="hover:bg-gray-100 dark:hover:bg-neutral-700/50 transition-colors cursor-pointer"
+                    @click="onRunTask(item)">
+                    <a-list-item-meta :title="item.name" :description="item.command" />
+                    <template #actions>
+                        <a-button type="text" size="small" :icon="h(RiSettings3Line)" @click.stop="onEdit(item)" />
+                        <a-button type="text" size="small" :icon="h(RiDeleteBinLine)" @click.stop="onDelete(item)" />
+                    </template>
+                </a-list-item>
+            </template>
+        </a-list>
 
-        <!-- 添加/编辑 Dialog -->
-        <Dialog :open="showAddModal" @update:open="(v: boolean) => showAddModal = v">
-            <DialogContent class="sm:max-w-[440px] bg-slate-800 border-slate-700 text-slate-200">
-                <DialogHeader>
-                    <DialogTitle>{{ isNew ? '添加任务' : '编辑任务' }}</DialogTitle>
-                </DialogHeader>
+        <div class="px-4 py-3 border-t border-t-neutral-200 dark:border-t-neutral-800">
+            <!-- 添加按钮 -->
+            <a-button block @click="onAdd" type="dashed">
+                + 添加任务
+            </a-button>
+        </div>
 
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1">任务名称 *</label>
-                        <Input
-                            v-model="editName"
-                            class="bg-slate-900 border-slate-700 text-slate-200 text-xs h-8"
-                            placeholder="例如：启动开发服务器"
-                        />
-                    </div>
-
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1">执行命令 *</label>
-                        <Input
-                            v-model="editCommand"
-                            class="bg-slate-900 border-slate-700 text-slate-200 text-xs h-8 font-mono"
-                            placeholder="例如：npm run dev"
-                        />
-                    </div>
-
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1">工作目录（选填）</label>
-                        <Input
-                            v-model="editCwd"
-                            class="bg-slate-900 border-slate-700 text-slate-200 text-xs h-8"
-                            placeholder="留空使用 home 目录"
-                        />
-                    </div>
-                </div>
-
-                <DialogFooter>
-                    <DialogClose as-child>
-                        <Button variant="secondary" size="sm" @click="onCloseEdit">取消</Button>
-                    </DialogClose>
-                    <Button size="sm" @click="onSave">保存</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <!-- 添加/编辑弹窗 -->
+        <a-modal v-model:open="showAddModal" :title="isNew ? '添加任务' : '编辑任务'" @cancel="onCloseEdit" @ok="onSave">
+            <a-form layout="vertical">
+                <a-form-item label="任务名称">
+                    <a-input v-model:value="editName" placeholder="例如：启动开发服务器" />
+                </a-form-item>
+                <a-form-item label="执行命令">
+                    <a-input v-model:value="editCommand" class="font-mono" placeholder="例如：npm run dev" />
+                </a-form-item>
+                <a-form-item label="工作目录（选填）">
+                    <a-input v-model:value="editCwd" placeholder="留空使用 home 目录" />
+                </a-form-item>
+            </a-form>
+        </a-modal>
     </div>
 </template>

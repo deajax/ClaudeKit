@@ -78,7 +78,6 @@ settings.json 的 `env` 字段**优先级高于** shell 环境变量。如果两
 
 ### DeepSeek
 - BASE_URL: `https://api.deepseek.com/anthropic`
-- 支持思考模式（reasoning_effort: low/medium/high/max）
 - 支持余额查询（手动刷新）
 
 ### OpenRouter

@@ -39,9 +39,11 @@ const ALLOWED_CHANNELS = [
     'system:check-claude',
     'system:check-node',
     'system:check-npm',
+    'system:check-git',
     'system:install-claude',
     'system:check-update',
-    'system:balance-query'
+    'system:balance-query',
+    'system:test-provider'
 ] as const
 
 type AllowedChannel = (typeof ALLOWED_CHANNELS)[number]
