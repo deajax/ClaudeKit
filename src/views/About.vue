@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { h, ref, onMounted } from 'vue'
+
+defineProps<{
+    visible: boolean
+}>()
 
 const emit = defineEmits<{
     close: []
@@ -43,50 +47,48 @@ async function checkUpdate(): Promise<void> {
 onMounted(() => {
     checkClaudeVersion()
 })
+
+import { RiGithubFill, RiBugFill } from '@remixicon/vue'
 </script>
 
 <template>
-    <div class="about-panel p-5 space-y-4 text-center">
-        <h3 class="text-base font-medium text-neutral-700 dark:text-neutral-200">Claude CLI Desktop</h3>
-        <p class="text-xs text-neutral-500 dark:text-neutral-400">跨平台桌面管理工具</p>
+    <a-modal :open="visible" title="关于" destroy-on-close @cancel="emit('close')">
+        <div class="about-panel p-5 space-y-4 text-center">
+            <h3 class="text-base font-medium text-neutral-700 dark:text-neutral-200">Claude CLI Desktop</h3>
+            <p class="text-xs text-neutral-500 dark:text-neutral-400">跨平台桌面管理工具</p>
 
-        <div class="bg-gray-100 dark:bg-neutral-700/30 rounded p-3 space-y-2 text-xs">
-            <div class="flex justify-between">
-                <span class="text-neutral-500 dark:text-neutral-400">软件版本</span>
-                <span class="text-neutral-700 dark:text-neutral-200">v{{ appVersion }}</span>
+            <div class="bg-gray-100 dark:bg-neutral-700/30 rounded p-3 space-y-2 text-xs">
+                <div class="flex justify-between">
+                    <span class="text-neutral-500 dark:text-neutral-400">软件版本</span>
+                    <span class="text-neutral-700 dark:text-neutral-200">v{{ appVersion }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-neutral-500 dark:text-neutral-400">Claude Code 版本</span>
+                    <span class="text-neutral-700 dark:text-neutral-200">{{ claudeVersion }}</span>
+                </div>
             </div>
-            <div class="flex justify-between">
-                <span class="text-neutral-500 dark:text-neutral-400">Claude Code 版本</span>
-                <span class="text-neutral-700 dark:text-neutral-200">{{ claudeVersion }}</span>
+
+            <div class="">
+                <a-button type="primary" @click="checkUpdate">
+                    检查更新
+                </a-button>
             </div>
-        </div>
 
-        <a-button type="primary" @click="checkUpdate">
-            检查更新
-        </a-button>
+            <div v-if="latestVersion" class="text-xs">
+                <p v-if="updateAvailable" class="text-yellow-600 dark:text-yellow-400">
+                    发现新版本 v{{ latestVersion }}，请前往下载
+                </p>
+                <p v-else class="text-green-600 dark:text-green-400">当前已是最新版本</p>
+            </div>
 
-        <div v-if="latestVersion" class="text-xs">
-            <p v-if="updateAvailable" class="text-yellow-600 dark:text-yellow-400">
-                发现新版本 v{{ latestVersion }}，请前往下载
-            </p>
-            <p v-else class="text-green-600 dark:text-green-400">当前已是最新版本</p>
+            <a-space>
+                <a-button href="https://github.com/deajax/claude-cli-desktop" target="_blank" type="link" :icon="h(RiGithubFill)">
+                    GitHub 仓库
+                </a-button>
+                <a-button href="https://github.com/deajax/claude-cli-desktop/issues" target="_blank" type="link" :icon="h(RiBugFill)">
+                    提 Issues
+                </a-button>
+            </a-space>
         </div>
-
-        <div class="pt-3 border-t border-neutral-200 dark:border-neutral-700 space-y-1">
-            <a
-                href="https://github.com"
-                target="_blank"
-                class="block text-xs text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300"
-            >
-                📦 GitHub 仓库
-            </a>
-            <a
-                href="https://github.com"
-                target="_blank"
-                class="block text-xs text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300"
-            >
-                🐛 提 Issues
-            </a>
-        </div>
-    </div>
+    </a-modal>
 </template>

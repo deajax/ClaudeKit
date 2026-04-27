@@ -9,12 +9,14 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "rebuild": "electron-builder install-app-deps"
+    "rebuild": "electron-builder install-app-deps",
+    "postinstall": "chmod +x node_modules/node-pty/prebuilds/*/spawn-helper 2>/dev/null; exit 0"
   },
   "dependencies": {
     "ant-design-vue": "^4.2.6",
     "fs-extra": "^11.2.0",
     "marked": "^18.0.2",
+    "monaco-editor": "^0.55.1",
     "node-pty": "^1.0.0",
     "pinia": "^2.3.0",
     "sudo-prompt": "^9.2.1",
@@ -26,7 +28,7 @@
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^3.0.0",
-    "@remixicon/vue": "^4.9.1",
+    "@remixicon/vue": "^4.9.0",
     "@tailwindcss/vite": "^4.0.0",
     "@types/node": "^22.10.1",
     "@vitejs/plugin-vue": "^5.2.1",

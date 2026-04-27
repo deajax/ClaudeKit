@@ -3,17 +3,20 @@ import { ref, reactive, watch } from 'vue'
 import { RiUpload2Line } from '@remixicon/vue'
 import type { Provider } from '../../shared/types'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     visible: boolean
     provider: (Provider & { id: string }) | null
-}>()
+    isNew?: boolean
+}>(), {
+    isNew: false
+})
 
 const emit = defineEmits<{
     close: []
     save: [data: Provider, verified: boolean]
+    delete: [id: string]
 }>()
 
-const isNew = ref(true)
 const testStatus = ref<'idle' | 'testing' | 'success' | 'fail'>('idle')
 const testErrorMsg = ref('')
 const fileList = ref<any[]>([])
@@ -67,12 +70,10 @@ function populateForm(p: Provider & { id: string }): void {
 
 watch(() => props.visible, (v) => {
     if (!v) return
-    if (props.provider) {
-        isNew.value = false
-        populateForm(props.provider)
-    } else {
-        isNew.value = true
+    if (props.isNew) {
         resetForm()
+    } else if (props.provider) {
+        populateForm(props.provider)
     }
 })
 
@@ -138,7 +139,7 @@ function onClose(): void {
 </script>
 
 <template>
-    <a-modal :open="visible" :title="isNew ? '新增模型商' : `编辑 — ${formModel.name}`" centered @cancel="onClose">
+    <a-modal :open="visible" :title="isNew ? '新增模型商' : `编辑 — ${formModel.name}`" :zIndex="1050" centered @cancel="onClose">
         <a-form :model="formModel" layout="vertical" class="max-h-[55vh] overflow-y-auto pr-2">
             <a-form-item label="名称" name="name">
                 <a-input v-model:value="formModel.name" placeholder="例如：DeepSeek" :disabled="!isNew" />
@@ -152,25 +153,39 @@ function onClose(): void {
                     </div>
                 </a-upload>
             </a-form-item>
-            <a-form-item label="ANTHROPIC_BASE_URL" name="baseUrl">
+            <a-form-item label="Base URL" name="baseUrl">
                 <a-input v-model:value="formModel.baseUrl" placeholder="https://api.deepseek.com/anthropic" />
             </a-form-item>
-            <a-form-item label="ANTHROPIC_AUTH_TOKEN" name="authToken">
-                <a-input v-model:value="formModel.authToken" type="password" placeholder="sk-xxxx" />
+            <a-form-item label="API key" name="authToken"
+                :validate-status="testStatus === 'success' ? 'success' : testStatus === 'fail' ? 'error' : ''"
+                :help="testStatus === 'success' ? '通过' : testStatus === 'fail' ? testErrorMsg : ''">
+                <div class="flex gap-2">
+                    <a-input v-model:value="formModel.authToken" placeholder="sk-xxxx" class="flex-1" />
+                    <a-button :loading="testStatus === 'testing'" @click="testConnectivity">
+                        测试连通性
+                    </a-button>
+                </div>
             </a-form-item>
 
             <a-typography-title :level="5">模型设置</a-typography-title>
 
-            <a-form-item label="ANTHROPIC_MODEL（默认模型）" name="model">
+            <div
+                class="mt-3 mb-4 bg-neutral-50 border border-neutral-200 dark:bg-white/5 dark:border-white/10 rounded-md py-2 px-4">
+                <span class="text-xs text-black/45 dark:text-white/45">
+                    Claude Code 最多可以配置4个模型，其中一个自定义的「默认模型」，<br />三个覆盖 Claude 默认模型的自定义模型。
+                </span>
+            </div>
+
+            <a-form-item label="默认模型" name="model">
                 <a-input v-model:value="formModel.model" class="font-mono" placeholder="例如：deepseek-chat" />
             </a-form-item>
-            <a-form-item label="ANTHROPIC_DEFAULT_OPUS_MODEL" name="opus">
+            <a-form-item label="覆盖Opus模型" name="opus">
                 <a-input v-model:value="formModel.opus" class="font-mono" placeholder="覆盖旗舰模型（可选）" />
             </a-form-item>
-            <a-form-item label="ANTHROPIC_DEFAULT_SONNET_MODEL" name="sonnet">
+            <a-form-item label="覆盖Sonnet模型" name="sonnet">
                 <a-input v-model:value="formModel.sonnet" class="font-mono" placeholder="覆盖高级模型（可选）" />
             </a-form-item>
-            <a-form-item label="ANTHROPIC_DEFAULT_HAIKU_MODEL" name="haiku">
+            <a-form-item label="覆盖Haiku模型" name="haiku">
                 <a-input v-model:value="formModel.haiku" class="font-mono" placeholder="覆盖初级模型（可选）" />
             </a-form-item>
             <template v-if="formModel.name.includes('DeepSeek') || formModel.name.includes('deepseek')">
@@ -182,13 +197,9 @@ function onClose(): void {
         </a-form>
         <template #footer>
             <div class="flex items-center">
-                <a-space>
-                    <a-button :loading="testStatus === 'testing'" @click="testConnectivity">
-                        测试连通性
-                    </a-button>
-                    <a-tag v-if="testStatus === 'success'" color="green">通过</a-tag>
-                    <a-tag v-else-if="testStatus === 'fail'" color="red">{{ testErrorMsg || '未通过' }}</a-tag>
-                </a-space>
+                <a-button v-if="!isNew" danger @click="emit('delete', props.provider!.id)">
+                    删除
+                </a-button>
                 <a-space class="ml-auto">
                     <a-button @click="onClose">取消</a-button>
                     <a-button type="primary" @click="onSave">确定</a-button>
@@ -204,7 +215,7 @@ function onClose(): void {
         display: flex;
         align-items: center;
         justify-content: center;
-        
+
         a {
             width: 24px;
             height: 22px;

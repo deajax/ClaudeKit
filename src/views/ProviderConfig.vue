@@ -4,7 +4,11 @@ import { useProviderStore } from '@/stores/providers'
 import { storeToRefs } from 'pinia'
 import { generateId } from '@/lib/utils'
 import type { Provider } from '../../shared/types'
-import ProviderFormModal from '@/components/ProviderFormModal.vue'
+import ProviderFormModal from '@/views/ProviderFormModal.vue'
+
+defineProps<{
+    visible: boolean
+}>()
 
 const emit = defineEmits<{
     close: []
@@ -15,15 +19,18 @@ const { providers } = storeToRefs(providerStore)
 
 const showEditModal = ref(false)
 const editingProvider = ref<(Provider & { id: string }) | null>(null)
+const isNewProvider = ref(false)
 
 // ---- 列表视图 ----
 
 function onAdd(): void {
+    isNewProvider.value = true
     editingProvider.value = { id: generateId(), name: '', icon: '', BASE_URL: '', AUTH_TOKEN: '', model: '', opusModel: '', sonnetModel: '', haikuModel: '', balanceApi: '' }
     showEditModal.value = true
 }
 
 function onEdit(prov: Provider & { id: string }): void {
+    isNewProvider.value = false
     editingProvider.value = { ...prov }
     showEditModal.value = true
 }
@@ -60,64 +67,36 @@ onMounted(() => {
 </script>
 
 <template>
-    <!-- 列表视图 (Drawer content) -->
-    <div class="provider-config-list p-4">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-medium text-neutral-700 dark:text-neutral-200">模型商管理</h3>
-            <a-button type="primary" class="text-xs" @click="onAdd">
-                + 添加模型商
-            </a-button>
-        </div>
-
-        <div class="grid gap-2">
-            <div
-                v-for="prov in providers"
-                :key="prov.id"
-                class="flex items-center gap-3 p-3 rounded bg-gray-100 dark:bg-neutral-700/50 border border-neutral-200/50 dark:border-neutral-600/50"
-            >
-                <img
-                    v-if="prov.icon"
-                    :src="prov.icon"
-                    class="w-8 h-8 rounded object-contain"
-                />
-                <div
-                    v-else
-                    class="w-8 h-8 rounded bg-gray-200 dark:bg-neutral-600 flex items-center justify-center text-xs text-neutral-500 dark:text-neutral-400"
-                >
-                    {{ prov.name.charAt(0) }}
-                </div>
-                <div class="flex-1 min-w-0">
-                    <div class="text-sm text-neutral-700 dark:text-neutral-200">{{ prov.name }}</div>
-                    <div class="text-xs text-neutral-400 dark:text-neutral-500">
-                        {{ [
-                            prov.model,
-                            prov.opusModel,
-                            prov.sonnetModel,
-                            prov.haikuModel
-                        ].filter(Boolean).length }} 个模型
-                    </div>
-                </div>
-                <a-button type="text" class="text-xs text-neutral-500 dark:text-neutral-400 h-auto px-2 py-1" @click.prevent="onEdit(prov)">
-                    编辑
-                </a-button>
-                <a-button type="text" class="text-xs text-neutral-500 dark:text-neutral-400 h-auto px-2 py-1" @click.prevent="onDelete(prov.id)">
-                    删除
-                </a-button>
+    <a-modal :open="visible" title="模型商配置" :width="640" destroy-on-close @cancel="emit('close')">
+        <a-row :gutter="[8, 8]">
+            <a-col span="12" v-for="prov in providers" :key="prov.id">
+                <a-card hoverable @click="onEdit(prov)">
+                    <a-card-meta :title="prov.name" :description="`${[
+                        prov.model,
+                        prov.opusModel,
+                        prov.sonnetModel,
+                        prov.haikuModel
+                    ].filter(Boolean).length} 个模型`">
+                        <template #avatar>
+                            <a-avatar v-if="prov.icon" :src="prov.icon" />
+                            <a-avatar v-else>
+                                {{ prov.name.charAt(0) }}
+                            </a-avatar>
+                        </template>
+                    </a-card-meta>
+                </a-card>
+            </a-col>
+            <div v-if="providers.length === 0" class="text-center py-8 text-xs text-neutral-400 dark:text-neutral-500">
+                暂无模型商，点击下方按钮添加
             </div>
-            <div
-                v-if="providers.length === 0"
-                class="text-center py-8 text-xs text-neutral-400 dark:text-neutral-500"
-            >
-                暂无模型商，点击上方按钮添加
-            </div>
-        </div>
-    </div>
+        </a-row>
+        <template #footer>
+            <a-button type="primary" @click="onAdd">+ 添加模型商</a-button>
+        </template>
+    </a-modal>
 
     <!-- 模型商编辑弹窗 -->
-    <ProviderFormModal
-        :visible="showEditModal"
-        :provider="editingProvider"
-        @close="onCloseEdit"
-        @save="onSaveProvider"
-    />
+    <ProviderFormModal :visible="showEditModal" :provider="editingProvider" :is-new="isNewProvider"
+        @close="onCloseEdit" @save="onSaveProvider"
+        @delete="(id: string) => { onDelete(id); onCloseEdit(); }" />
 </template>

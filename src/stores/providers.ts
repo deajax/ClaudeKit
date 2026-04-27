@@ -5,7 +5,9 @@ import {
     getProviders,
     addProvider as dbAddProvider,
     updateProvider as dbUpdateProvider,
-    deleteProvider as dbDeleteProvider
+    deleteProvider as dbDeleteProvider,
+    getSettings,
+    saveSettings
 } from '@/lib/db'
 
 export const useProviderStore = defineStore('providers', () => {
@@ -21,6 +23,10 @@ export const useProviderStore = defineStore('providers', () => {
         loading.value = true
         try {
             providers.value = await getProviders()
+            const settings = await getSettings()
+            if (settings.activeProviderId) {
+                activeProviderId.value = settings.activeProviderId
+            }
             if (!activeProviderId.value && providers.value.length > 0) {
                 activeProviderId.value = providers.value[0].id
             }
@@ -47,8 +53,13 @@ export const useProviderStore = defineStore('providers', () => {
         await fetchProviders()
     }
 
-    function setActive(id: string): void {
+    async function setActive(id: string): Promise<void> {
         activeProviderId.value = id
+        try {
+            const settings = await getSettings()
+            settings.activeProviderId = id
+            await saveSettings(settings)
+        } catch { /* 静默失败 */ }
     }
 
     function getEnvVars(providerId?: string): Record<string, string> {

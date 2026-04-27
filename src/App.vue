@@ -5,7 +5,7 @@ import { useTerminalStore } from '@/stores/terminal'
 import { useProviderStore } from '@/stores/providers'
 import { useSettingsStore } from '@/stores/settings'
 import { storeToRefs } from 'pinia'
-import { theme } from 'ant-design-vue'
+import { theme, message } from 'ant-design-vue'
 import Toolbar from '@/views/Toolbar.vue'
 import TerminalTab from '@/views/TerminalTab.vue'
 import TaskDrawer from '@/views/TaskDrawer.vue'
@@ -36,9 +36,9 @@ const isDark = computed(() => settings.value.theme === 'dark')
 const themeConfig = computed(() => ({
     algorithm: isDark.value ? theme.darkAlgorithm : theme.defaultAlgorithm,
     token: {
-        colorBorder: '#e5e5e5',
-        colorBorderSecondary: '#e5e5e5',
-    }
+        colorBorder: isDark.value ? '#424242' : '#e5e5e5',
+        colorBorderSecondary: isDark.value ? '#303030' : '#e5e5e5',
+    },
 }))
 
 // Track env vars per tab
@@ -129,10 +129,18 @@ function onCloseTab(id: string): void {
     }
 }
 
-function onApplyProvider(_envVars: Record<string, string>): void {
-    // 模型商已在 Toolbar 中设为 active
-    // 仅作静默记录，不再弹确认框、不再重启终端
-    // 新的环境变量会在点击"运行 Claude"时自动生效
+async function onApplyProvider(_envVars: Record<string, string>): Promise<void> {
+    const p = providerStore.activeProvider
+    message.success(p ? `已应用「${p.name}」` : '已应用')
+
+    // 将环境变量写入 shell 配置文件（.zshrc / .bashrc / PowerShell Profile）
+    if (window.electronAPI) {
+        const vars = providerStore.getEnvVars()
+        const result = await window.electronAPI.invoke<{ success: boolean; path?: string; error?: string }>('env:export-vars', vars)
+        if (result.success) {
+            console.log('环境变量已写入:', result.path)
+        }
+    }
 }
 
 function handleTabEdit(key: string | number | MouseEvent, action: 'add' | 'remove'): void {
@@ -205,11 +213,6 @@ function onRunTask(task: { id: string; name: string; command: string; cwd: strin
     }, 600)
 }
 
-function tabKey(id: string): string {
-    const env = tabEnvVars.value[id]
-    return `${id}-${env ? JSON.stringify(env) : 'default'}`
-}
-
 </script>
 
 <template>
@@ -218,7 +221,7 @@ function tabKey(id: string): string {
         <SetupWizard v-if="showWizard" @close="showWizard = false" @complete="onWizardComplete" />
 
         <a-layout class="h-screen w-screen overflow-hidden"
-            :class="isDark ? 'bg-neutral-900 text-neutral-100' : 'bg-neutral-200! text-neutral-800'">
+            :class="isDark ? 'bg-neutral-800 text-neutral-100' : 'bg-neutral-200! text-neutral-800'">
             <!-- 标签栏 -->
             <a-layout-header class="drag-region h-auto! flex bg-transparent! leading-normal! px-0!"
                 :class="os === 'mac' ? 'pl-20!' : ''">
@@ -241,17 +244,17 @@ function tabKey(id: string): string {
             </a-layout-header>
 
             <!-- 工具栏 -->
-            <div class="w-full py-2 px-4 shrink-0 border-b border-neutral-100 bg-white dark:bg-neutral-900">
+            <div
+                class="w-full py-2 px-4 shrink-0 border-b border-neutral-100 bg-white dark:bg-neutral-900 dark:border-neutral-800">
                 <Toolbar :claude-running="terminalRefs[activeTabId ?? '']?.claudeRunning ?? false"
                     @apply-provider="onApplyProvider" @open-task-drawer="showTaskDrawer = !showTaskDrawer"
                     @open-menu="onOpenDrawer" @start-claude="handleStartClaude(activeTabId ?? '')"
-                    @restart-claude="terminalRefs[activeTabId ?? '']?.restartClaude?.()"
                     @stop-claude="terminalRefs[activeTabId ?? '']?.stopClaude?.()" />
             </div>
 
             <!-- 终端主体 -->
             <a-layout-content class="terminal-area flex-1 min-h-0 bg-white dark:bg-neutral-900">
-                <div v-for="tab in tabs" :key="tabKey(tab.id)" v-show="tab.id === activeTabId" class="h-full w-full">
+                <div v-for="tab in tabs" :key="tab.id" v-show="tab.id === activeTabId" class="h-full w-full">
                     <TerminalTab :ref="(el: any) => { if (el) terminalRefs[tab.id] = el }" :session-id="tab.id"
                         :env-vars="tabEnvVars[tab.id]" @ready="(sid: string) => onTerminalReady(sid, tab.id)"
                         @exit="(sid: string) => onTerminalExit(sid, tab.id)" />
@@ -259,36 +262,25 @@ function tabKey(id: string): string {
             </a-layout-content>
 
             <!-- 底部状态栏 -->
-            <a-layout-footer class="text-xs! py-2! px-0! bg-white! border-t border-t-neutral-100">
+            <a-layout-footer
+                class="text-xs! py-2! px-4! bg-white! border-t border-t-neutral-100 dark:bg-neutral-900! dark:border-t-neutral-800!">
                 <span>claude {{ claudeVersion }}</span>
                 <span>v{{ appVersion }}</span>
             </a-layout-footer>
         </a-layout>
 
         <!-- 任务 Drawer -->
-        <a-drawer v-model:open="showTaskDrawer" title="运行任务" placement="top" :bodyStyle="{ padding: 0 }" destroy-on-close
-            @close="showTaskDrawer = false">
+        <a-drawer v-model:open="showTaskDrawer" title="运行任务" placement="top" height="auto" :bodyStyle="{ padding: 0 }"
+            destroy-on-close @close="showTaskDrawer = false" rootClassName="task-drawer">
             <TaskDrawer @close="showTaskDrawer = false" @run-task="onRunTask" />
         </a-drawer>
 
         <!-- 面板 Modals -->
-        <a-modal v-model:open="showProviderConfig" title="模型商配置" :footer="null" destroy-on-close
-            @cancel="showProviderConfig = false">
-            <ProviderConfig @close="showProviderConfig = false" />
-        </a-modal>
-        <a-modal v-model:open="showSettings" title="设置" :footer="null" destroy-on-close @cancel="showSettings = false">
-            <Settings @close="showSettings = false" />
-        </a-modal>
-        <a-modal v-model:open="showEnvManager" title="环境变量管理" :footer="null" destroy-on-close
-            @cancel="showEnvManager = false">
-            <EnvManager @close="showEnvManager = false" />
-        </a-modal>
-        <a-modal v-model:open="showHelp" title="帮助文档" :footer="null" destroy-on-close @cancel="showHelp = false">
-            <HelpDocs @close="showHelp = false" />
-        </a-modal>
-        <a-modal v-model:open="showAbout" title="关于" :footer="null" destroy-on-close @cancel="showAbout = false">
-            <About @close="showAbout = false" />
-        </a-modal>
+        <ProviderConfig :visible="showProviderConfig" @close="showProviderConfig = false" />
+        <Settings :visible="showSettings" @close="showSettings = false" />
+        <EnvManager :visible="showEnvManager" @close="showEnvManager = false" />
+        <HelpDocs :visible="showHelp" @close="showHelp = false" />
+        <About :visible="showAbout" @close="showAbout = false" />
     </a-config-provider>
 </template>
 
@@ -318,17 +310,9 @@ body {
         .ant-tabs-tab,
         .ant-tabs-nav-add {
             border: 0;
-            background-color: fade(black, 5%);
 
-            &:hover {
-                background-color: fade(white, 75%);
-            }
         }
-
-        .ant-tabs-tab.ant-tabs-tab-active {
-            background-color: white;
-        }
-    }   
+    }
 }
 
 
@@ -353,6 +337,20 @@ body {
         float: right;
         line-height: 22px;
         padding: 0;
+    }
+}
+
+.task-drawer {
+    .ant-drawer-content-wrapper {
+        width: 640px;
+        top: 16px;
+        left: 0;
+        right: 0;
+        margin: auto;
+    }
+
+    .ant-drawer-content {
+        border-radius: 8px;
     }
 }
 </style>

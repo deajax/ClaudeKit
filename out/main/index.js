@@ -203,7 +203,8 @@ const DEFAULT_SETTINGS = {
   fontSize: 14,
   fontFamily: 'Menlo, Monaco, "Courier New", monospace',
   loginMode: "",
-  wizardCompleted: false
+  wizardCompleted: false,
+  activeProviderId: ""
 };
 const DATA_DIR$2 = path.join(os.homedir(), ".ClaudeCLI");
 function dataPath$2(file) {
@@ -319,9 +320,9 @@ const sessions = /* @__PURE__ */ new Map();
 path.join(os.homedir(), ".ClaudeCLI");
 function getShell() {
   if (process.platform === "win32") {
-    return process.env.COMSPEC ?? "powershell.exe";
+    return process.env.COMSPEC || "powershell.exe";
   }
-  const shell = process.env.SHELL ?? "/bin/zsh";
+  const shell = process.env.SHELL || "/bin/zsh";
   if (fs.existsSync(shell)) return shell;
   return "/bin/bash";
 }
@@ -330,12 +331,16 @@ function getCwd() {
 }
 function buildEnv(extraEnv) {
   const env = {};
-  Object.assign(env, process.env);
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value !== void 0) {
+      env[key] = value;
+    }
+  }
   if (extraEnv) {
     Object.assign(env, extraEnv);
   }
-  if (!env.PATH && process.env.PATH) {
-    env.PATH = process.env.PATH;
+  if (!env.PATH) {
+    env.PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
   }
   return env;
 }
@@ -357,7 +362,11 @@ function registerTerminalIPC() {
         const rows = opts?.rows ?? 30;
         const cwd = opts?.cwd ?? getCwd();
         const env = buildEnv(opts?.envVars);
-        const shell = opts?.shell || getShell();
+        let shell = opts?.shell || getShell();
+        if (!fs.existsSync(shell)) {
+          console.warn(`[terminal] shell not found: ${shell}, fallback to default`);
+          shell = getShell();
+        }
         const pty = nodePty.spawn(shell, [], {
           name: "xterm-256color",
           cols,
@@ -516,6 +525,47 @@ function registerEnvIPC() {
       return { success: false, error: e.message };
     }
   });
+  electron.ipcMain.handle("env:export-vars", async (_event, vars) => {
+    try {
+      const targetPath = getDefaultShellConfigPath();
+      const isPowershell = targetPath.endsWith(".ps1");
+      let content = "";
+      if (fs.existsSync(targetPath)) {
+        content = fs.readFileSync(targetPath, "utf-8");
+      }
+      const lines = content.split("\n").filter((line) => {
+        const trimmed = line.trim();
+        if (isPowershell) {
+          return !/^\$env:ANTHROPIC_\w+\s*=/.test(trimmed);
+        }
+        return !/^export\s+ANTHROPIC_\w+=/.test(trimmed);
+      });
+      while (lines.length > 0 && lines[lines.length - 1].trim() === "") {
+        lines.pop();
+      }
+      lines.push("");
+      lines.push("# === Claude CLI Desktop — 模型商环境变量 ===");
+      for (const [key, value] of Object.entries(vars)) {
+        if (value) {
+          lines.push(isPowershell ? `$env:${key} = "${value}"` : `export ${key}="${value}"`);
+        }
+      }
+      lines.push("");
+      const newContent = lines.join("\n");
+      try {
+        fs.writeFileSync(targetPath, newContent, "utf-8");
+      } catch (e) {
+        if (e.code === "EACCES") {
+          await writeWithSudo$1(targetPath, newContent);
+        } else {
+          throw e;
+        }
+      }
+      return { success: true, path: targetPath };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  });
   electron.ipcMain.handle("env:list", async () => {
     try {
       return { success: true, data: { ...process.env } };
@@ -537,7 +587,7 @@ function registerEnvIPC() {
   });
   electron.ipcMain.handle("system:check-update", async (_event, currentVersion) => {
     try {
-      const repo = process.env.GITHUB_REPO || "user/claude-cli-desktop";
+      const repo = process.env.GITHUB_REPO || "deajax/claude-cli-desktop";
       const resp = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
         headers: {
           Accept: "application/vnd.github+json",
@@ -875,6 +925,7 @@ function createWindow() {
     show: false,
     frame: false,
     titleBarStyle: "hiddenInset",
+    trafficLightPosition: { x: 16, y: 16 },
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.js"),
       sandbox: false,

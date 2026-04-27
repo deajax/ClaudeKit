@@ -114,6 +114,58 @@ export function registerEnvIPC(): void {
         }
     })
 
+    // ---- env:export-vars — 将环境变量写入 shell 配置文件（去重追加） ----
+    ipcMain.handle('env:export-vars', async (_event, vars: Record<string, string>) => {
+        try {
+            const targetPath = getDefaultShellConfigPath()
+            const isPowershell = targetPath.endsWith('.ps1')
+            let content = ''
+            if (existsSync(targetPath)) {
+                content = readFileSync(targetPath, 'utf-8')
+            }
+
+            // 去掉已有的 ANTHROPIC_ 相关 export / $env 行
+            const lines = content.split('\n').filter(line => {
+                const trimmed = line.trim()
+                if (isPowershell) {
+                    return !/^\$env:ANTHROPIC_\w+\s*=/.test(trimmed)
+                }
+                return !/^export\s+ANTHROPIC_\w+=/.test(trimmed)
+            })
+
+            // 去掉末尾空行，追加新 export
+            while (lines.length > 0 && lines[lines.length - 1].trim() === '') {
+                lines.pop()
+            }
+            lines.push('')
+            lines.push('# === Claude CLI Desktop — 模型商环境变量 ===')
+            for (const [key, value] of Object.entries(vars)) {
+                if (value) {
+                    lines.push(isPowershell
+                        ? `$env:${key} = "${value}"`
+                        : `export ${key}="${value}"`)
+                }
+            }
+            lines.push('')
+
+            const newContent = lines.join('\n')
+
+            try {
+                writeFileSync(targetPath, newContent, 'utf-8')
+            } catch (e) {
+                if ((e as NodeJS.ErrnoException).code === 'EACCES') {
+                    await writeWithSudo(targetPath, newContent)
+                } else {
+                    throw e
+                }
+            }
+
+            return { success: true, path: targetPath }
+        } catch (e) {
+            return { success: false, error: (e as Error).message }
+        }
+    })
+
     // ---- env:list — 列出当前进程环境变量 ----
     ipcMain.handle('env:list', async () => {
         try {
@@ -142,7 +194,7 @@ export function registerEnvIPC(): void {
     // ---- system:check-update ----
     ipcMain.handle('system:check-update', async (_event, currentVersion: string) => {
         try {
-            const repo = process.env.GITHUB_REPO || 'user/claude-cli-desktop'
+            const repo = process.env.GITHUB_REPO || 'deajax/claude-cli-desktop'
             const resp = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
                 headers: {
                     Accept: 'application/vnd.github+json',

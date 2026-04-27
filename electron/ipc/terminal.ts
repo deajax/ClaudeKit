@@ -12,10 +12,10 @@ const DATA_DIR = join(homedir(), '.ClaudeCLI')
 
 function getShell(): string {
     if (process.platform === 'win32') {
-        return process.env.COMSPEC ?? 'powershell.exe'
+        return process.env.COMSPEC || 'powershell.exe'
     }
-    const shell = process.env.SHELL ?? '/bin/zsh'
-    if (existsSync(shell)) return shell
+    const shell = process.env.SHELL || '/bin/zsh'
+    if (shell && existsSync(shell)) return shell
     return '/bin/bash'
 }
 
@@ -25,17 +25,21 @@ function getCwd(): string {
 
 function buildEnv(extraEnv?: Record<string, string>): Record<string, string> {
     const env: Record<string, string> = {}
-    // Inherit current process env
-    Object.assign(env, process.env)
+    // Inherit current process env, filter out undefined values
+    for (const [key, value] of Object.entries(process.env)) {
+        if (value !== undefined) {
+            env[key] = value
+        }
+    }
     // Apply extra env vars (e.g., ANTHROPIC_BASE_URL, etc.)
     if (extraEnv) {
         Object.assign(env, extraEnv)
     }
-    // Ensure PATH is set
-    if (!env.PATH && process.env.PATH) {
-        env.PATH = process.env.PATH
+    // Ensure PATH is set (posix_spawnp requires it when resolving bare filenames)
+    if (!env.PATH) {
+        env.PATH = '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin'
     }
-    return env as Record<string, string>
+    return env
 }
 
 function sendToRenderer(channel: string, sessionId: string, data: unknown): void {
@@ -61,7 +65,11 @@ export function registerTerminalIPC(): void {
                 const rows = opts?.rows ?? 30
                 const cwd = opts?.cwd ?? getCwd()
                 const env = buildEnv(opts?.envVars)
-                const shell = opts?.shell || getShell()
+                let shell = opts?.shell || getShell()
+                if (!existsSync(shell)) {
+                    console.warn(`[terminal] shell not found: ${shell}, fallback to default`)
+                    shell = getShell()
+                }
 
                 const pty = spawn(shell, [], {
                     name: 'xterm-256color',

@@ -125,7 +125,7 @@ import { RiSettings3Line, RiDeleteBinLine } from '@remixicon/vue'
         </div>
 
         <!-- 任务列表 -->
-        <a-list class="max-h-50 overflow-y-auto" :data-source="filteredTasks" size="small" :locale="{ emptyText: '暂无匹配任务' }">
+        <a-list class="max-h-64 overflow-y-auto" :data-source="filteredTasks" size="small" :locale="{ emptyText: '暂无匹配任务' }">
             <template #renderItem="{ item }">
                 <a-list-item class="hover:bg-gray-100 dark:hover:bg-neutral-700/50 transition-colors cursor-pointer"
                     @click="onRunTask(item)">

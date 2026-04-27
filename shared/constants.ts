@@ -73,5 +73,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
     fontSize: 14,
     fontFamily: 'Menlo, Monaco, "Courier New", monospace',
     loginMode: '',
-    wizardCompleted: false
+    wizardCompleted: false,
+    activeProviderId: ''
 }

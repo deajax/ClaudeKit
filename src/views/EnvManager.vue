@@ -1,7 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, watch, nextTick, onUnmounted, computed } from 'vue'
 import { getOs } from '@/lib/utils'
 import { getEnv, saveEnv } from '@/lib/db'
+import { monaco } from '@/monaco'
+import { useSettingsStore } from '@/stores/settings'
+import { storeToRefs } from 'pinia'
+
+const props = defineProps<{
+    visible: boolean
+}>()
 
 const emit = defineEmits<{
     close: []
@@ -9,19 +16,47 @@ const emit = defineEmits<{
 
 const os = getOs()
 
-// ---- macOS: 代码编辑器模式 ----
-const shellConfigContent = ref('')
+const { settings } = storeToRefs(useSettingsStore())
+const isDark = computed(() => settings.value.theme === 'dark')
+
+// ---- macOS: Monaco Editor 模式 ----
 const shellConfigPath = ref('')
+const shellMonacoContainer = ref<HTMLElement | null>(null)
+let shellEditor: monaco.editor.IStandaloneCodeEditor | null = null
+
+function disposeEditor(): void {
+    shellEditor?.dispose()
+    shellEditor = null
+}
+
+function initEditor(): void {
+    if (shellEditor || !shellMonacoContainer.value) return
+    shellEditor = monaco.editor.create(shellMonacoContainer.value, {
+        value: '',
+        language: 'shell',
+        theme: isDark.value ? 'vs-dark' : 'vs',
+        fontSize: 13,
+        fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace",
+        minimap: { enabled: false },
+        lineNumbers: 'on',
+        scrollBeyondLastLine: false,
+        automaticLayout: true,
+        tabSize: 2,
+        scrollbar: { verticalScrollbarSize: 6, horizontalScrollbarSize: 6 }
+    })
+}
 
 async function loadShellConfig(): Promise<void> {
     try {
         const result = await window.electronAPI.invoke<{ success: boolean; data?: string; path?: string }>('env:read')
-        if (result.success && result.data) {
-            shellConfigContent.value = result.data
+        if (result.success && result.data && shellEditor) {
+            shellEditor.setValue(result.data)
             shellConfigPath.value = result.path ?? ''
         }
     } catch {
-        shellConfigContent.value = '# 无法读取 shell 配置文件'
+        if (shellEditor) {
+            shellEditor.setValue('# 无法读取 shell 配置文件')
+        }
     }
 }
 
@@ -29,8 +64,9 @@ async function saveShellConfig(): Promise<void> {
     const confirmed = confirm('保存 shell 配置文件可能需要系统权限授权，是否继续？')
     if (!confirmed) return
 
+    const content = shellEditor?.getValue() ?? ''
     try {
-        const result = await window.electronAPI.invoke<{ success: boolean; error?: string }>('env:write', shellConfigContent.value, shellConfigPath.value, true)
+        const result = await window.electronAPI.invoke<{ success: boolean; error?: string }>('env:write', content, shellConfigPath.value, true)
         if (result.success) {
             alert('保存成功，重启终端后生效')
         } else {
@@ -40,6 +76,20 @@ async function saveShellConfig(): Promise<void> {
         alert('保存失败: ' + (e as Error).message)
     }
 }
+
+watch(() => props.visible, async (open) => {
+    if (!open) {
+        disposeEditor()
+        return
+    }
+    if (os === 'mac') {
+        await nextTick()
+        initEditor()
+        loadShellConfig()
+    } else {
+        loadEnvTable()
+    }
+})
 
 // ---- Windows: 表格模式 ----
 const envRows = ref<{ key: string; value: string }[]>([])
@@ -77,86 +127,49 @@ async function saveEnvTable(): Promise<void> {
     }
 }
 
-// ---- 配置文件编辑 ----
-const shellProfilePath = ref('')
-const profileContent = ref('')
-const showProfileEditor = ref(false)
+watch(isDark, (dark) => {
+    shellEditor?.updateOptions({ theme: dark ? 'vs-dark' : 'vs' })
+})
 
-async function loadProfileForEdit(): Promise<void> {
-    try {
-        const result = await window.electronAPI.invoke<{
-            success: boolean
-            data?: string
-            path?: string
-        }>('env:read-profile')
-        if (result.success && result.data) {
-            profileContent.value = result.data
-            shellProfilePath.value = result.path ?? ''
-            showProfileEditor.value = true
-        }
-    } catch {
-        alert('无法读取 shell 配置文件')
-    }
-}
-
-async function saveProfile(): Promise<void> {
-    const confirmed = confirm('保存 shell 配置文件可能需要系统权限授权，是否继续？')
-    if (!confirmed) return
-
-    try {
-        await window.electronAPI.invoke('env:write-profile', {
-            path: shellProfilePath.value,
-            content: profileContent.value,
-            useSudo: true
-        })
-        alert('保存成功，重启终端后生效')
-    } catch (e) {
-        alert('保存失败: ' + (e as Error).message)
-    }
-}
-
-onMounted(() => {
-    if (os === 'mac') {
-        loadShellConfig()
-    } else {
-        loadEnvTable()
-    }
+onUnmounted(() => {
+    disposeEditor()
 })
 </script>
 
 <template>
-    <div class="env-manager p-4 space-y-4">
-        <h3 class="text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-4">环境变量管理</h3>
+    <a-modal :open="visible" title="环境变量管理" :width="800" destroy-on-close @cancel="emit('close')">
+        <template #footer>
+            <template v-if="os === 'mac'">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs dark:text-neutral-200">
+                        {{ shellConfigPath || 'Shell 配置文件' }}</span>
+                    <a-button type="primary" @click="saveShellConfig">
+                        保存
+                    </a-button>
+                </div>
+            </template>
+            <template v-if="os === 'win'">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs dark:text-neutral-200">用户环境变量</span>
+                    <a-space>
+                        <a-button @click="addRow">
+                            添加变量
+                        </a-button>
+                        <a-button type="primary" @click="saveEnvTable">
+                            保存
+                        </a-button>
+                    </a-space>
+                </div>
+            </template>
+        </template>
 
-        <!-- macOS 代码编辑器 -->
-        <div v-if="os === 'mac'">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs text-neutral-500 dark:text-neutral-400">{{ shellConfigPath || 'Shell 配置文件' }}</span>
-                <a-button  type="primary" class="text-xs" @click="saveShellConfig">
-                    保存
-                </a-button>
-            </div>
-            <textarea
-                v-model="shellConfigContent"
-                rows="20"
-                spellcheck="false"
-                class="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-700 rounded p-3 text-sm text-neutral-700 dark:text-neutral-200 font-mono outline-none focus:border-blue-500 resize-none"
-            />
+        <!-- macOS Monaco 代码编辑器 -->
+        <div v-if="os === 'mac'" class="w-full overflow-hidden rounded" style="height:500px">
+            <div ref="shellMonacoContainer" class="w-full h-full" />
         </div>
 
         <!-- Windows 可视化表格 -->
         <div v-else>
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs text-neutral-500 dark:text-neutral-400">用户环境变量</span>
-                <div class="flex gap-2">
-                    <a-button  class="text-xs" @click="addRow">
-                        + 添加变量
-                    </a-button>
-                    <a-button  type="primary" class="text-xs" @click="saveEnvTable">
-                        保存
-                    </a-button>
-                </div>
-            </div>
             <table class="w-full text-xs border border-neutral-200 dark:border-neutral-700 rounded overflow-hidden">
                 <thead>
                     <tr class="bg-gray-100 dark:bg-neutral-800">
@@ -166,27 +179,21 @@ onMounted(() => {
                     </tr>
                 </thead>
                 <tbody>
-                    <tr
-                        v-for="(row, i) in envRows"
-                        :key="i"
-                        class="border-t border-neutral-200 dark:border-neutral-700"
-                    >
+                    <tr v-for="(row, i) in envRows" :key="i"
+                        class="border-t border-neutral-200 dark:border-neutral-700">
                         <td class="px-2 py-1">
-                            <a-input
-                                v-model:value="row.key"
-                                                                class="bg-transparent border-0 text-neutral-700 dark:text-neutral-200 h-7 text-xs"
-                                placeholder="变量名"
-                            />
+                            <a-input v-model:value="row.key"
+                                class="bg-transparent border-0 text-neutral-700 dark:text-neutral-200 h-7 text-xs"
+                                placeholder="变量名" />
                         </td>
                         <td class="px-2 py-1">
-                            <a-input
-                                v-model:value="row.value"
-                                                                class="bg-transparent border-0 text-neutral-700 dark:text-neutral-200 h-7 text-xs"
-                                placeholder="变量值"
-                            />
+                            <a-input v-model:value="row.value"
+                                class="bg-transparent border-0 text-neutral-700 dark:text-neutral-200 h-7 text-xs"
+                                placeholder="变量值" />
                         </td>
                         <td class="px-2 py-1 text-center">
-                            <a-button type="text"  class="text-neutral-400 dark:text-neutral-500 h-auto px-1" @click="removeRow(i)">
+                            <a-button type="text" class="text-neutral-400 dark:text-neutral-500 h-auto px-1"
+                                @click="removeRow(i)">
                                 ×
                             </a-button>
                         </td>
@@ -199,33 +206,5 @@ onMounted(() => {
                 </tbody>
             </table>
         </div>
-
-        <!-- 通用：直接编辑 Shell 配置文件 -->
-        <div class="pt-3 border-t border-neutral-200 dark:border-neutral-700">
-            <a-button  class="text-xs" @click="loadProfileForEdit">
-                编辑 Shell 配置文件
-            </a-button>
-        </div>
-
-        <!-- Shell 配置文件编辑弹窗 -->
-        <a-modal
-            v-model:open="showProfileEditor"
-            :footer="null"
-            width="600px"
-            @cancel="() => showProfileEditor = false"
-        >
-            <div class="flex items-center justify-between mb-3">
-                <span class="text-xs text-neutral-500 dark:text-neutral-400">{{ shellProfilePath }}</span>
-                <a-button  type="primary" class="text-xs" @click="saveProfile">保存</a-button>
-            </div>
-            <div class="min-h-64">
-                <textarea
-                    v-model="profileContent"
-                    rows="20"
-                    spellcheck="false"
-                    class="w-full h-full min-h-64 bg-white dark:bg-neutral-950 border-0 p-4 text-sm text-neutral-700 dark:text-neutral-200 font-mono outline-none resize-none rounded"
-                />
-            </div>
-        </a-modal>
-    </div>
+    </a-modal>
 </template>

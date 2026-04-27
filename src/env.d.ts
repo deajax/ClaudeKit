@@ -21,6 +21,7 @@ type AllowedChannel =
     | 'env:list'
     | 'env:read-profile'
     | 'env:write-profile'
+    | 'env:export-vars'
     | 'config:read'
     | 'config:write'
     | 'config:read-help'

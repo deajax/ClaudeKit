@@ -18,6 +18,7 @@ const ALLOWED_CHANNELS = [
   "env:list",
   "env:read-profile",
   "env:write-profile",
+  "env:export-vars",
   // 配置操作（Phase 4）
   "config:read",
   "config:write",

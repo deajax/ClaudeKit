@@ -24,6 +24,7 @@ let fitAddon: FitAddon | null = null
 let unsubOutput: (() => void) | null = null
 let unsubExit: (() => void) | null = null
 let currentSessionId = ''
+let resizeObserver: ResizeObserver | null = null
 
 const settingsStore = useSettingsStore()
 const { settings } = storeToRefs(settingsStore)
@@ -57,9 +58,9 @@ async function createTerminal(): Promise<void> {
         fontSize: settings.value.fontSize,
         fontFamily: settings.value.fontFamily,
         theme: {
-            background: settings.value.theme === 'dark' ? '#0f172a' : '#ffffff',
-            foreground: settings.value.theme === 'dark' ? '#e2e8f0' : '#1e293b',
-            cursor: settings.value.theme === 'dark' ? '#e2e8f0' : '#1e293b',
+            background: settings.value.theme === 'dark' ? '#141414' : '#ffffff',
+            foreground: settings.value.theme === 'dark' ? '#d4d4d4' : '#1e293b',
+            cursor: settings.value.theme === 'dark' ? '#d4d4d4' : '#1e293b',
             selectionBackground: 'rgba(59, 130, 246, 0.3)'
         },
         scrollback: settings.value.scrollback,
@@ -99,7 +100,10 @@ async function createTerminal(): Promise<void> {
     })
 
     // Handle resize
-    const resizeObserver = new ResizeObserver(() => {
+    if (resizeObserver) {
+        resizeObserver.disconnect()
+    }
+    resizeObserver = new ResizeObserver(() => {
         if (fitAddon && terminal) {
             fitAddon.fit()
             const dims = fitAddon.proposeDimensions()
@@ -115,31 +119,22 @@ async function createTerminal(): Promise<void> {
     })
     resizeObserver.observe(terminalEl.value)
 
-    onUnmounted(() => {
-        resizeObserver.disconnect()
-    })
-
     emit('ready', currentSessionId)
 }
 
 function startClaude(): void {
     if (!terminal || claudeRunning.value) return
-    terminal.write('claude\r')
+    window.electronAPI.invoke('terminal:input', currentSessionId, 'claude\r')
     claudeRunning.value = true
+    terminal.focus()
 }
 
-function restartClaude(): void {
+async function stopClaude(): Promise<void> {
     if (!terminal) return
-    terminal.write('\x03')
-    setTimeout(() => {
-        terminal?.write('claude\r')
-    }, 500)
-}
-
-function stopClaude(): void {
-    if (!terminal) return
-    terminal.write('\x03')
     claudeRunning.value = false
+    destroy()
+    await nextTick()
+    await createTerminal()
 }
 
 function destroy(): void {
@@ -148,6 +143,10 @@ function destroy(): void {
     terminal?.dispose()
     terminal = null
     fitAddon = null
+    if (resizeObserver) {
+        resizeObserver.disconnect()
+        resizeObserver = null
+    }
     if (currentSessionId) {
         window.electronAPI.invoke('terminal:destroy', currentSessionId)
     }
@@ -193,7 +192,6 @@ function sendText(text: string): void {
 
 defineExpose({
     startClaude,
-    restartClaude,
     stopClaude,
     sendText,
     claudeRunning

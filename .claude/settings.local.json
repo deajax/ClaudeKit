@@ -8,7 +8,21 @@
       "Bash(node -e ' *)",
       "Bash(npm run *)",
       "WebSearch",
-      "Bash(npx vue-tsc *)"
+      "Bash(npx vue-tsc *)",
+      "Bash(npx electron-rebuild *)",
+      "Bash(sw_vers -productVersion)",
+      "Read(//bin/**)",
+      "Bash(node -p \"process.arch\")",
+      "Bash(npx electron *)",
+      "Bash(node -e \"const np = require\\('node-pty'\\); const p = np.spawn\\('/bin/zsh', [], {name:'xterm', cols:80, rows:24, cwd:process.env.HOME}\\); console.log\\('spawn OK', p.pid\\); p.kill\\(\\);\")",
+      "Bash(python3 -c \"import distutils\")",
+      "Bash(pip3 install *)",
+      "Bash(otool -L /Users/hanbin/项目/ClaudeCli/node_modules/node-pty/prebuilds/darwin-x64/pty.node)",
+      "Bash(node -e \"const pty = require\\('node-pty/lib/unixTerminal'\\); console.log\\('loaded'\\)\")",
+      "Bash(node -e \"try { const n = require\\('node-pty/build/Release/pty.node'\\); console.log\\('dir:', n.dir\\); } catch\\(e\\) { console.log\\('fallback:', e.message\\); try { process.env.NODE_PATH='/Users/hanbin/项目/ClaudeCli/node_modules/node-pty/prebuilds/darwin-x64'; const n2 = require\\(process.env.NODE_PATH + '/pty.node'\\); console.log\\('prebuild dir:', n2.dir\\); } catch\\(e2\\) { console.log\\(e2.message\\) } }\")",
+      "Bash(chmod +x /Users/hanbin/项目/ClaudeCli/node_modules/node-pty/prebuilds/darwin-x64/spawn-helper)",
+      "Bash(chmod +x /Users/hanbin/项目/ClaudeCli/node_modules/node-pty/prebuilds/darwin-arm64/spawn-helper)",
+      "Read(//Users/hanbin/项目/OneConfig/src/renderer/views/**)"
     ]
   }
 }

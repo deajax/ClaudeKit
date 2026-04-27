@@ -174,7 +174,7 @@ import { BUILTIN_PROVIDERS } from '../../shared/constants'
 import { generateId } from '@/lib/utils'
 import { useProviderStore } from '@/stores/providers'
 import type { Provider } from '../../shared/types'
-import ProviderFormModal from '@/components/ProviderFormModal.vue'
+import ProviderFormModal from '@/views/ProviderFormModal.vue'
 
 const providerStore2 = useProviderStore()
 const builtinCards = computed(() =>
@@ -359,7 +359,7 @@ onMounted(() => {
 
                     <div class="grid grid-cols-3 gap-2">
                         <div v-for="card in builtinCards" :key="card.name"
-                            class="relative flex flex-col items-center justify-center gap-2 p-4 rounded-md border cursor-pointer transition-all"
+                            class="relative flex flex-col items-center justify-center gap-2 p-4 rounded-md border cursor-pointer transition-all h-16"
                             :class="card.saved
                                 ? 'border-green-500/50 bg-green-500/5'
                                 : 'border-neutral-200 dark:border-neutral-600 hover:border-blue-500 bg-white dark:bg-white/5 hover:dark:bg-blue-500/10'"
@@ -373,7 +373,7 @@ onMounted(() => {
                         </div>
 
                         <div @click="openAddProvider"
-                            class="flex flex-col items-center justify-center gap-2 p-4 rounded-md border border-dashed border-neutral-300 dark:border-neutral-500 cursor-pointer hover:border-blue-500 bg-white dark:bg-white/5 hover:dark:bg-blue-500/10 transition-all min-h-[106px]">
+                            class="flex flex-col items-center justify-center gap-2 p-4 rounded-md border border-dashed border-neutral-300 dark:border-neutral-500 cursor-pointer hover:border-blue-500 bg-white dark:bg-white/5 hover:dark:bg-blue-500/10 transition-all h-16">
                             <span
                                 class="w-8 h-8 flex items-center justify-center bg-neutral-100 dark:bg-white/5 rounded-full">
                                 <RiAddLine />
@@ -406,7 +406,7 @@ onMounted(() => {
                     <!-- 主题选择 -->
                     <div class="flex gap-3 justify-center">
                         <button
-                            class="flex-1 max-w-36 px-4 py-3 rounded-lg border text-xs text-center transition-all cursor-pointer"
+                            class="flex-1 max-w-36 px-4 py-3 rounded-lg border text-xs text-center transition-all cursor-pointer dark:text-white"
                             :class="selectedTheme === 'light'
                                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
                                 : 'border-neutral-200 dark:border-neutral-600 hover:border-neutral-300 dark:hover:border-neutral-500 bg-white dark:bg-neutral-700/50'"
@@ -415,7 +415,7 @@ onMounted(() => {
                             <div class="font-medium text-neutral-700 dark:text-neutral-200">浅色模式</div>
                         </button>
                         <button
-                            class="flex-1 max-w-36 px-4 py-3 rounded-lg border text-xs text-center transition-all cursor-pointer"
+                            class="flex-1 max-w-36 px-4 py-3 rounded-lg border text-xs text-center transition-all cursor-pointer dark:text-white"
                             :class="selectedTheme === 'dark'
                                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
                                 : 'border-neutral-200 dark:border-neutral-600 hover:border-neutral-300 dark:hover:border-neutral-500 bg-white dark:bg-neutral-700/50'"
@@ -462,7 +462,7 @@ onMounted(() => {
         </a-modal>
 
         <!-- 模型商配置弹窗 -->
-        <ProviderFormModal :visible="showProviderModal" :provider="editingProvider" @close="closeProviderModal"
+        <ProviderFormModal :visible="showProviderModal" :provider="editingProvider" :is-new="!editingProvider" @close="closeProviderModal"
             @save="onSaveProvider" />
     </div>
 </template>

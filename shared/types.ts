@@ -64,6 +64,7 @@ export interface AppSettings {
     fontFamily: string
     loginMode: string
     wizardCompleted?: boolean
+    activeProviderId?: string
 }
 
 // ---------- 余额信息 ----------

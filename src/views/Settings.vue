@@ -3,6 +3,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
 import { storeToRefs } from 'pinia'
 
+defineProps<{
+    visible: boolean
+}>()
+
 const emit = defineEmits<{
     close: []
 }>()
@@ -46,8 +50,7 @@ async function onToggleTheme(): Promise<void> {
     settingsStore.updateTheme(newTheme)
 }
 
-function onFontSizeChange(e: Event): void {
-    const val = parseInt((e.target as HTMLInputElement).value)
+function onFontSizeChange(val: number): void {
     settingsStore.updateFontSize(val)
 }
 
@@ -109,135 +112,74 @@ async function onResetTasks(): Promise<void> {
 }
 
 function onOpenIssues(): void {
-    window.open('https://github.com/user/claude-cli-desktop/issues', '_blank')
+    window.open('https://github.com/deajax/claude-cli-desktop/issues', '_blank')
 }
 
 function onOpenRepo(): void {
-    window.open('https://github.com/user/claude-cli-desktop', '_blank')
+    window.open('https://github.com/deajax/claude-cli-desktop', '_blank')
 }
 </script>
 
 <template>
-    <div class="settings-panel p-4 space-y-5">
-        <h3 class="text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-4">设置</h3>
+    <a-modal :open="visible" title="设置" destroy-on-close @cancel="emit('close')">
+        <a-form :labelCol="{ span: 5 }" :wrapperCol="{ span: 18 }">
+            <!-- 外观设置 -->
+            <a-form-item label="暗色模式">
+                <a-switch :checked="settings.theme === 'dark'" @change="onToggleTheme" />
+            </a-form-item>
 
-        <!-- 主题 -->
-        <div class="flex items-center justify-between">
-            <span class="text-xs text-neutral-500 dark:text-neutral-400">主题</span>
-            <a-button  class="text-xs" @click="onToggleTheme">
-                {{ settings.theme === 'dark' ? '🌙 深色' : '☀️ 浅色' }}
-            </a-button>
-        </div>
+            <a-form-item label="终端字号">
+                <a-input-number :min="10" :max="28" :value="settings.fontSize" @change="onFontSizeChange" />
+            </a-form-item>
 
-        <!-- 字体大小 -->
-        <div class="flex items-center justify-between">
-            <span class="text-xs text-neutral-500 dark:text-neutral-400">终端字号</span>
-            <input
-                type="range"
-                min="10"
-                max="28"
-                :value="settings.fontSize"
-                class="w-32"
-                @change="onFontSizeChange"
-            />
-            <span class="text-xs text-neutral-600 dark:text-neutral-300 w-8">{{ settings.fontSize }}px</span>
-        </div>
+            <a-form-item label="终端字体">
+                <a-input v-model:value="fontFamily" />
+            </a-form-item>
 
-        <!-- 字体 -->
-        <div>
-            <label class="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">终端字体</label>
-            <a-input
-                v-model:value="fontFamily"
-                                class="bg-white dark:bg-neutral-900 text-xs h-8"
-            />
-        </div>
+            <a-form-item label="回滚缓冲">
+                <a-select v-model:value="scrollback">
+                    <a-select-option :value="500">500 行</a-select-option>
+                    <a-select-option :value="1000">1000 行</a-select-option>
+                    <a-select-option :value="5000">5000 行</a-select-option>
+                    <a-select-option :value="10000">10000 行</a-select-option>
+                </a-select>
+            </a-form-item>
 
-        <!-- 回滚缓冲 -->
-        <div class="flex items-center justify-between">
-            <span class="text-xs text-neutral-500 dark:text-neutral-400">回滚缓冲</span>
-            <a-select v-model:value="scrollback" class="w-40" >
-                <a-select-option :value="500">500 行</a-select-option>
-                <a-select-option :value="1000">1000 行</a-select-option>
-                <a-select-option :value="5000">5000 行</a-select-option>
-                <a-select-option :value="10000">10000 行</a-select-option>
-            </a-select>
-        </div>
+            <a-form-item label="Shell 类型">
+                <a-select v-model:value="shell">
+                    <a-select-option value="">系统默认</a-select-option>
+                    <a-select-option value="/bin/zsh">zsh</a-select-option>
+                    <a-select-option value="/bin/bash">bash</a-select-option>
+                    <a-select-option value="powershell.exe">PowerShell</a-select-option>
+                </a-select>
+            </a-form-item>
 
-        <!-- Shell 类型 -->
-        <div>
-            <label class="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Shell 类型</label>
-            <a-select v-model:value="shell" class="w-full" >
-                <a-select-option value="">系统默认</a-select-option>
-                <a-select-option value="/bin/zsh">zsh</a-select-option>
-                <a-select-option value="/bin/bash">bash</a-select-option>
-                <a-select-option value="powershell.exe">PowerShell</a-select-option>
-            </a-select>
-        </div>
 
-        <hr class="border-neutral-200 dark:border-neutral-700" />
+            <!-- 免登录配置 -->
+            <a-form-item label="Claude免登录">
+                <div class="w-full">
+                    <div class="flex items-center gap-2 mb-2 p-1">
+                        <a-tag :color="loginConfigured ? 'green' : 'orange'">
+                            {{ loginConfigured ? '已配置' : '未配置' }}
+                        </a-tag>
+                    </div>
+                    <a-button v-if="!loginConfigured" type="primary" block @click="onSetupLogin">
+                        一键配置免登录
+                    </a-button>
+                    <p class="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+                        在 ~/.claude.json 中设置 hasCompletedOnboarding = true，需授权提权操作
+                    </p>
+                </div>
+            </a-form-item>
 
-        <!-- 免登录配置 -->
-        <div>
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs text-neutral-500 dark:text-neutral-400">Claude Code 免登录</span>
-                <span
-                    class="text-xs px-2 py-0.5 rounded"
-                    :class="loginConfigured ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400' : 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400'"
-                >
-                    {{ loginConfigured ? '已配置' : '未配置' }}
-                </span>
-            </div>
-            <a-button
-                v-if="!loginConfigured"
-                type="primary"
-                                class="w-full"
-                @click="onSetupLogin"
-            >
-                一键配置免登录
-            </a-button>
-            <p class="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
-                在 ~/.claude.json 中设置 hasCompletedOnboarding = true，需授权提权操作
-            </p>
-        </div>
-
-        <hr class="border-neutral-200 dark:border-neutral-700" />
-
-        <!-- 重置 -->
-        <div class="space-y-2">
-            <a-button
-                                block
-                class="text-left hover:bg-red-100 dark:hover:bg-red-600/50"
-                @click="onResetSettings"
-            >
-                🔄 重置设置
-            </a-button>
-            <a-button
-                                block
-                class="text-left hover:bg-red-100 dark:hover:bg-red-600/50"
-                @click="onResetProviders"
-            >
-                🔄 重置模型商
-            </a-button>
-            <a-button
-                                block
-                class="text-left hover:bg-red-100 dark:hover:bg-red-600/50"
-                @click="onResetTasks"
-            >
-                🔄 重置任务
-            </a-button>
-        </div>
-
-        <hr class="border-neutral-200 dark:border-neutral-700" />
-
-        <!-- 链接 -->
-        <div class="space-y-1">
-            <a-button type="link"  class="text-xs p-0 h-auto" @click="onOpenRepo">
-                📦 仓库地址
-            </a-button>
-            <br />
-            <a-button type="link"  class="text-xs p-0 h-auto" @click="onOpenIssues">
-                🐛 提 Issues
-            </a-button>
-        </div>
-    </div>
+            <!-- 重置 -->
+            <a-form-item label="重置选项">
+                <a-space class="w-full">
+                    <a-button block @click="onResetSettings">重置设置</a-button>
+                    <a-button danger block @click="onResetProviders">重置模型商</a-button>
+                    <a-button danger block @click="onResetTasks">重置运行任务</a-button>
+                </a-space>
+            </a-form-item>
+        </a-form>
+    </a-modal>
 </template>

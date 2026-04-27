@@ -2,11 +2,11 @@
 import { h, ref, onMounted } from 'vue'
 import { useProviderStore } from '@/stores/providers'
 import { storeToRefs } from 'pinia'
+import { message } from 'ant-design-vue'
 import {
     RiFunctionLine,
     RiPlayFill,
     RiStopFill,
-    RiMemoriesLine,
     RiGame2Line,
     RiTerminalBoxLine,
     RiSettingsLine,
@@ -25,7 +25,6 @@ const emit = defineEmits<{
     openTaskDrawer: []
     openMenu: [menu: string]
     startClaude: []
-    restartClaude: []
     stopClaude: []
 }>()
 
@@ -36,6 +35,19 @@ const selectedProviderId = ref('')
 
 function onApply(): void {
     if (!selectedProviderId.value) return
+
+    const p = providers.value.find(x => x.id === selectedProviderId.value)
+    if (!p) return
+
+    const missing: string[] = []
+    if (!p.AUTH_TOKEN) missing.push('AUTH_TOKEN（API Key）')
+    if (!p.BASE_URL) missing.push('BASE_URL')
+
+    if (missing.length > 0) {
+        message.warning(`「${p.name}」缺少必填项：${missing.join('、')}，请先在模型商配置中完善`)
+        return
+    }
+
     providerStore.setActive(selectedProviderId.value)
     const envVars = providerStore.getEnvVars(selectedProviderId.value)
     emit('applyProvider', envVars)
@@ -59,7 +71,7 @@ onMounted(async () => {
             <template #overlay>
                 <a-menu>
                     <a-menu-item v-for="item in [
-                        { key: 'providerConfig', label: '模型商配置', icon: h(RiGame2Line) },
+                        { key: 'providerConfig', label: '模型配置', icon: h(RiGame2Line) },
                         { key: 'envManager', label: '环境变量管理', icon: h(RiTerminalBoxLine) },
                         { key: 'settings', label: '设置', icon: h(RiSettingsLine) },
                         { key: 'help', label: '帮助文档', icon: h(RiLightbulbLine) },
@@ -91,7 +103,6 @@ onMounted(async () => {
                 @click="emit('startClaude')">
                 运行 Claude
             </a-button>
-            <a-button v-if="claudeRunning" :icon="h(RiMemoriesLine)" @click="emit('restartClaude')" />
             <a-button v-if="claudeRunning" :icon="h(RiStopFill)" danger @click="emit('stopClaude')" />
             <!-- 运行任务按钮 -->
             <a-button class="h-7 text-xs" @click="emit('openTaskDrawer')">
