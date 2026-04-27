@@ -143,6 +143,47 @@ async function onApplyProvider(_envVars: Record<string, string>): Promise<void> 
     }
 }
 
+const balanceLoading = ref(false)
+const balanceDisplay = ref('')
+
+async function onQueryBalance(): Promise<void> {
+    const p = providerStore.activeProvider
+    if (!p?.balanceApi || !p?.AUTH_TOKEN) {
+        message.warning('当前模型商未配置余额查询 API')
+        return
+    }
+    balanceLoading.value = true
+    balanceDisplay.value = ''
+    try {
+        const result = await window.electronAPI.invoke<{ success: boolean; data?: unknown; error?: string }>(
+            'system:balance-query', p.balanceApi, p.AUTH_TOKEN
+        )
+        if (result.success && result.data) {
+            const d = result.data as Record<string, unknown>
+            if (d?.balance_infos && Array.isArray(d.balance_infos)) {
+                balanceDisplay.value = (d.balance_infos as Array<Record<string, unknown>>)
+                    .map(b => `${b.currency ?? ''} ${b.total_balance ?? '-'}`)
+                    .join(', ')
+            } else if (d?.total_credits !== undefined) {
+                balanceDisplay.value = `Credits: ${d.total_credits}`
+            } else if (d?.total !== undefined) {
+                balanceDisplay.value = `Total: ${d.total}`
+            } else if (d?.balance !== undefined) {
+                balanceDisplay.value = `Balance: ${d.balance}`
+            } else {
+                balanceDisplay.value = JSON.stringify(d)
+            }
+            message.success(`余额: ${balanceDisplay.value}`)
+        } else {
+            message.error(result.error ?? '查询失败')
+        }
+    } catch (e) {
+        message.error((e as Error).message)
+    } finally {
+        balanceLoading.value = false
+    }
+}
+
 function handleTabEdit(key: string | number | MouseEvent, action: 'add' | 'remove'): void {
     if (action === 'add') {
         onAddTab()
@@ -263,9 +304,12 @@ function onRunTask(task: { id: string; name: string; command: string; cwd: strin
 
             <!-- 底部状态栏 -->
             <a-layout-footer
-                class="text-xs! py-2! px-4! bg-white! border-t border-t-neutral-100 dark:bg-neutral-900! dark:border-t-neutral-800!">
-                <span>claude {{ claudeVersion }}</span>
-                <span>v{{ appVersion }}</span>
+                class="text-xs! py-2! px-4! bg-white! border-t border-t-neutral-100 dark:bg-neutral-900! dark:border-t-neutral-800! flex items-center justify-between">
+                <span>claude {{ claudeVersion }} v{{ appVersion }}</span>
+                <div class="" v-if="providerStore.activeProvider?.balanceApi" :loading="balanceLoading">
+                    <span class="cursor-pointer" @click="onQueryBalance">查余额 / </span>
+                    <span>{{ balanceDisplay }}</span>
+                </div>
             </a-layout-footer>
         </a-layout>
 

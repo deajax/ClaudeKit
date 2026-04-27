@@ -19,6 +19,8 @@ const emit = defineEmits<{
 
 const testStatus = ref<'idle' | 'testing' | 'success' | 'fail'>('idle')
 const testErrorMsg = ref('')
+const balanceStatus = ref<'idle' | 'loading' | 'success' | 'fail'>('idle')
+const balanceResult = ref('')
 const fileList = ref<any[]>([])
 
 const formModel = reactive({
@@ -117,6 +119,52 @@ async function testConnectivity(): Promise<void> {
     }
 }
 
+function formatBalance(data: unknown): string {
+    const d = data as Record<string, unknown> | undefined
+    if (!d) return JSON.stringify(data)
+
+    // DeepSeek 格式: { balance_infos: [{ currency, total_balance, topped_up_balance, granted_balance }] }
+    if (Array.isArray(d.balance_infos)) {
+        return (d.balance_infos as Array<Record<string, unknown>>)
+            .map(b => `${b.currency ?? '?'}: ${b.total_balance ?? '-'}`)
+            .join(', ')
+    }
+
+    // 通用格式: { total_credits / total / balance } 等
+    if (d.total_credits !== undefined) return `Credits: ${d.total_credits}`
+    if (d.total !== undefined) return `Total: ${d.total}`
+    if (d.balance !== undefined) return `Balance: ${d.balance}`
+
+    return JSON.stringify(data)
+}
+
+async function queryBalance(): Promise<void> {
+    if (!formModel.balanceApi || !formModel.authToken) {
+        balanceStatus.value = 'fail'
+        balanceResult.value = '请先填写余额查询 API 和 AUTH_TOKEN'
+        return
+    }
+    balanceStatus.value = 'loading'
+    balanceResult.value = ''
+    try {
+        const result = await window.electronAPI.invoke<{ success: boolean; data?: unknown; error?: string }>(
+            'system:balance-query',
+            formModel.balanceApi,
+            formModel.authToken
+        )
+        if (result.success && result.data) {
+            balanceStatus.value = 'success'
+            balanceResult.value = formatBalance(result.data)
+        } else {
+            balanceStatus.value = 'fail'
+            balanceResult.value = result.error ?? '查询失败'
+        }
+    } catch (e) {
+        balanceStatus.value = 'fail'
+        balanceResult.value = (e as Error).message
+    }
+}
+
 function onSave(): void {
     const data: Provider = {
         name: formModel.name,
@@ -188,19 +236,20 @@ function onClose(): void {
             <a-form-item label="覆盖Haiku模型" name="haiku">
                 <a-input v-model:value="formModel.haiku" class="font-mono" placeholder="覆盖初级模型（可选）" />
             </a-form-item>
-            <template v-if="formModel.name.includes('DeepSeek') || formModel.name.includes('deepseek')">
-                <a-form-item label="余额查询 API" name="balanceApi">
-                    <a-input v-model:value="formModel.balanceApi" class="font-mono"
-                        placeholder="https://api.deepseek.com/user/balance" />
-                </a-form-item>
-            </template>
+            <a-form-item label="余额查询 API" name="balanceApi"
+                :validate-status="balanceStatus === 'success' ? 'success' : balanceStatus === 'fail' ? 'error' : ''"
+                :help="balanceStatus === 'fail' ? balanceResult : balanceStatus === 'success' ? balanceResult : ''">
+                <a-input v-model:value="formModel.balanceApi" class="font-mono"
+                    placeholder="https://api.deepseek.com/user/balance" />
+            </a-form-item>
         </a-form>
         <template #footer>
-            <div class="flex items-center">
+            <div class="flex items-center justify-between">
                 <a-button v-if="!isNew" danger @click="emit('delete', props.provider!.id)">
                     删除
                 </a-button>
-                <a-space class="ml-auto">
+                <div v-else />
+                <a-space>
                     <a-button @click="onClose">取消</a-button>
                     <a-button type="primary" @click="onSave">确定</a-button>
                 </a-space>
