@@ -166,6 +166,19 @@ watch(
     }
 )
 
+watch(
+    () => settings.value.theme,
+    (theme) => {
+        if (!terminal) return
+        terminal.options.theme = {
+            background: theme === 'dark' ? '#141414' : '#ffffff',
+            foreground: theme === 'dark' ? '#d4d4d4' : '#1e293b',
+            cursor: theme === 'dark' ? '#d4d4d4' : '#1e293b',
+            selectionBackground: 'rgba(59, 130, 246, 0.3)'
+        }
+    }
+)
+
 // 监听 envVars 变化，重启终端以应用新环境变量
 watch(
     () => props.envVars,

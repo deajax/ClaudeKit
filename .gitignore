@@ -2,3 +2,5 @@ node_modules
 /out
 tsconfig.web.tsbuildinfo
 tsconfig.node.tsbuildinfo
+/out
+/out/renderer

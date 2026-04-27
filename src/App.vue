@@ -64,11 +64,17 @@ const appVersion = ref('0.1.0')
 const claudeVersion = ref('--')
 
 function applyThemeClass(dark: boolean): void {
+    // 添加过渡 class 触发主题切换动画
+    document.documentElement.classList.add('theme-transitioning')
     if (dark) {
         document.documentElement.classList.add('dark')
     } else {
         document.documentElement.classList.remove('dark')
     }
+    // 过渡结束后移除 class，避免影响后续操作
+    setTimeout(() => {
+        document.documentElement.classList.remove('theme-transitioning')
+    }, 350)
 }
 
 // 监听主题变化，同步切换 <html> 的 dark class
@@ -306,8 +312,8 @@ function onRunTask(task: { id: string; name: string; command: string; cwd: strin
             <a-layout-footer
                 class="text-xs! py-2! px-4! bg-white! border-t border-t-neutral-100 dark:bg-neutral-900! dark:border-t-neutral-800! flex items-center justify-between">
                 <span>claude {{ claudeVersion }} v{{ appVersion }}</span>
-                <div class="" v-if="providerStore.activeProvider?.balanceApi" :loading="balanceLoading">
-                    <span class="cursor-pointer" @click="onQueryBalance">查余额 / </span>
+                <div class="flex items-center gap-2" v-if="providerStore.activeProvider?.balanceApi" :loading="balanceLoading">
+                    <span class="cursor-pointer" @click="onQueryBalance">查余额</span>
                     <span>{{ balanceDisplay }}</span>
                 </div>
             </a-layout-footer>
@@ -396,5 +402,16 @@ body {
     .ant-drawer-content {
         border-radius: 8px;
     }
+}
+
+/* 全局主题切换过渡动画 — 只作用于 .theme-transitioning 激活期间 */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+    transition: background-color 0.3s ease,
+                border-color 0.3s ease,
+                color 0.3s ease,
+                box-shadow 0.3s ease !important;
 }
 </style>

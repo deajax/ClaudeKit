@@ -92,20 +92,38 @@ watch(() => props.visible, async (open) => {
 })
 
 // ---- Windows: 表格模式 ----
-const envRows = ref<{ key: string; value: string }[]>([])
+const envRows = ref<{ key: string; value: string; source: 'system' | 'user' }[]>([])
 const editingRow = ref<number | null>(null)
 
 async function loadEnvTable(): Promise<void> {
     try {
-        const data = await getEnv()
-        envRows.value = Object.entries(data).map(([key, value]) => ({ key, value }))
+        // 并行加载系统变量和用户自定义变量
+        const [sysResult, userData] = await Promise.all([
+            window.electronAPI.invoke<{ success: boolean; data: Record<string, string> }>('env:list'),
+            getEnv().catch(() => ({} as Record<string, string>))
+        ])
+
+        const sysVars = sysResult.success ? sysResult.data : {}
+        const userVars = userData || {}
+
+        // 合并：自定义变量覆盖系统同名变量，且标记为 'user'
+        const merged = new Map<string, { key: string; value: string; source: 'system' | 'user' }>()
+
+        for (const [key, value] of Object.entries(sysVars)) {
+            merged.set(key, { key, value, source: 'system' })
+        }
+        for (const [key, value] of Object.entries(userVars)) {
+            merged.set(key, { key, value, source: 'user' })
+        }
+
+        envRows.value = Array.from(merged.values())
     } catch {
         envRows.value = []
     }
 }
 
 function addRow(): void {
-    envRows.value.push({ key: '', value: '' })
+    envRows.value.push({ key: '', value: '', source: 'user' })
     editingRow.value = envRows.value.length - 1
 }
 
@@ -115,9 +133,10 @@ function removeRow(index: number): void {
 }
 
 async function saveEnvTable(): Promise<void> {
+    // 只保存用户自定义的变量（包括新增和修改过的）
     const obj: Record<string, string> = {}
     for (const row of envRows.value) {
-        if (row.key) obj[row.key] = row.value
+        if (row.key && row.source === 'user') obj[row.key] = row.value
     }
     try {
         await saveEnv(obj)
@@ -173,33 +192,42 @@ onUnmounted(() => {
             <table class="w-full text-xs border border-neutral-200 dark:border-neutral-700 rounded overflow-hidden">
                 <thead>
                     <tr class="bg-gray-100 dark:bg-neutral-800">
-                        <th class="px-3 py-2 text-left text-neutral-500 dark:text-neutral-400 w-1/2">变量名</th>
-                        <th class="px-3 py-2 text-left text-neutral-500 dark:text-neutral-400 w-1/2">变量值</th>
+                        <th class="px-3 py-2 text-left text-neutral-500 dark:text-neutral-400 w-2/5">变量名</th>
+                        <th class="px-3 py-2 text-left text-neutral-500 dark:text-neutral-400 w-2/5">变量值</th>
+                        <th class="px-3 py-2 text-left text-neutral-500 dark:text-neutral-400 w-16">来源</th>
                         <th class="px-3 py-2 w-12" />
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="(row, i) in envRows" :key="i"
-                        class="border-t border-neutral-200 dark:border-neutral-700">
+                        class="border-t border-neutral-200 dark:border-neutral-700"
+                        :class="row.source === 'system' ? 'opacity-70' : ''">
                         <td class="px-2 py-1">
                             <a-input v-model:value="row.key"
                                 class="bg-transparent border-0 text-neutral-700 dark:text-neutral-200 h-7 text-xs"
-                                placeholder="变量名" />
+                                placeholder="变量名" :disabled="row.source === 'system'" />
                         </td>
                         <td class="px-2 py-1">
                             <a-input v-model:value="row.value"
                                 class="bg-transparent border-0 text-neutral-700 dark:text-neutral-200 h-7 text-xs"
-                                placeholder="变量值" />
+                                placeholder="变量值" :disabled="row.source === 'system'" />
+                        </td>
+                        <td class="px-2 py-1">
+                            <span class="text-xs"
+                                :class="row.source === 'system' ? 'text-neutral-400' : 'text-blue-500'">
+                                {{ row.source === 'system' ? '系统' : '用户' }}
+                            </span>
                         </td>
                         <td class="px-2 py-1 text-center">
-                            <a-button type="text" class="text-neutral-400 dark:text-neutral-500 h-auto px-1"
+                            <a-button v-if="row.source === 'user'" type="text"
+                                class="text-neutral-400 dark:text-neutral-500 h-auto px-1"
                                 @click="removeRow(i)">
                                 ×
                             </a-button>
                         </td>
                     </tr>
                     <tr v-if="envRows.length === 0">
-                        <td colspan="3" class="px-3 py-4 text-center text-neutral-400 dark:text-neutral-500">
+                        <td colspan="4" class="px-3 py-4 text-center text-neutral-400 dark:text-neutral-500">
                             暂无环境变量
                         </td>
                     </tr>
