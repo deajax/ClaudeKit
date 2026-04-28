@@ -82,6 +82,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Cleanup — keep only installers
+        run: |
+          find release -type f ! -name '*.dmg' ! -name '*Setup*.exe' -delete
+          find release -type d -empty -delete
+        shell: bash
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v5
         with:
