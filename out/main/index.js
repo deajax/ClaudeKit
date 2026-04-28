@@ -572,16 +572,88 @@ function registerEnvIPC() {
       return { success: false, error: e.message };
     }
   });
+  electron.ipcMain.handle("env:save-user-vars", async (_event, vars) => {
+    if (process.platform !== "win32") {
+      return { success: false, error: "仅 Windows 支持" };
+    }
+    try {
+      let readUserVars = function() {
+        try {
+          const output = execSync('reg query "HKCU\\Environment"', { encoding: "utf-8", timeout: 5e3 });
+          const result = {};
+          for (const line of output.split(/\r?\n/)) {
+            const parts = line.trim().split(/\s{2,}/);
+            if (parts.length >= 3 && parts[1].startsWith("REG_")) {
+              result[parts[0]] = parts.slice(2).join(" ");
+            }
+          }
+          return result;
+        } catch {
+          return {};
+        }
+      };
+      const { execSync } = await import("child_process");
+      const currentVars = readUserVars();
+      const newKeys = new Set(Object.keys(vars));
+      for (const key of Object.keys(currentVars)) {
+        if (!newKeys.has(key)) {
+          execSync(`reg delete "HKCU\\Environment" /v "${key}" /f`, { encoding: "utf-8", timeout: 5e3 });
+        }
+      }
+      for (const [key, value] of Object.entries(vars)) {
+        if (currentVars[key] !== value) {
+          const escapedValue = value.replace(/"/g, '\\"');
+          execSync(`reg add "HKCU\\Environment" /v "${key}" /t REG_SZ /d "${escapedValue}" /f`, { encoding: "utf-8", timeout: 5e3 });
+        }
+      }
+      try {
+        execSync(
+          `powershell.exe -NoProfile -Command "[System.Environment]::SetEnvironmentVariable('PATH', [System.Environment]::GetEnvironmentVariable('PATH', 'User'), 'User')"`,
+          { encoding: "utf-8", timeout: 5e3, windowsHide: true }
+        );
+      } catch {
+      }
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  });
   electron.ipcMain.handle("env:list", async () => {
     try {
-      const filtered = {};
       const sensitivePattern = /(?:secret|password|credential|private_key)/i;
+      if (process.platform === "win32") {
+        let readRegistry = function(key) {
+          try {
+            const output = execSync(`reg query "${key}"`, { encoding: "utf-8", timeout: 5e3 });
+            const vars = {};
+            const lines = output.split(/\r?\n/);
+            for (const line of lines) {
+              const parts = line.trim().split(/\s{2,}/);
+              if (parts.length >= 3 && parts[1].startsWith("REG_")) {
+                const name = parts[0];
+                const value = parts.slice(2).join(" ");
+                if (!sensitivePattern.test(name)) {
+                  vars[name] = value;
+                }
+              }
+            }
+            return vars;
+          } catch {
+            return {};
+          }
+        };
+        const { execSync } = await import("child_process");
+        const system = readRegistry("HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment");
+        const user = readRegistry("HKCU\\Environment");
+        return { success: true, data: { system, user } };
+      }
+      const filtered = {};
       for (const [key, value] of Object.entries(process.env)) {
         if (value !== void 0 && !sensitivePattern.test(key)) {
           filtered[key] = value;
         }
       }
-      return { success: true, data: filtered };
+      return { success: true, data: { system: filtered, user: {} } };
     } catch (e) {
       return { success: false, error: e.message };
     }
@@ -930,6 +1002,24 @@ function registerTaskIPC() {
     }
   });
 }
+function registerWindowIPC() {
+  electron.ipcMain.handle("window:minimize", () => {
+    const win = electron.BrowserWindow.getFocusedWindow();
+    win?.minimize();
+  });
+  electron.ipcMain.handle("window:maximize", () => {
+    const win = electron.BrowserWindow.getFocusedWindow();
+    if (win?.isMaximized()) {
+      win.unmaximize();
+    } else {
+      win?.maximize();
+    }
+  });
+  electron.ipcMain.handle("window:close", () => {
+    const win = electron.BrowserWindow.getFocusedWindow();
+    win?.close();
+  });
+}
 function createWindow() {
   const mainWindow = new electron.BrowserWindow({
     width: 1200,
@@ -968,6 +1058,7 @@ function registerIpcModules() {
   registerConfigIPC();
   registerProviderIPC();
   registerTaskIPC();
+  registerWindowIPC();
 }
 electron.app.whenReady().then(() => {
   electronApp.setAppUserModelId("com.claudekit.desktop");

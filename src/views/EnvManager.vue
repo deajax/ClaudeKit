@@ -98,72 +98,80 @@ watch(() => props.visible, async (open) => {
 })
 
 // ---- Windows: 表格模式 ----
-const envRows = ref<{ key: string; value: string; source: 'system' | 'user' }[]>([])
-const editingRow = ref<number | null>(null)
-const inputRefs = ref<any[]>([])
-const sysCount = computed(() => envRows.value.filter(r => r.source === 'system').length)
-const userCount = computed(() => envRows.value.filter(r => r.source === 'user').length)
+const activeTabKey = ref('user')
+const systemRows = ref<{ key: string; value: string }[]>([])
+const userRows = ref<{ key: string; value: string }[]>([])
+
+const sysColumns = [
+    { title: '变量名', key: 'name', width: '50%' },
+    { title: '变量值', key: 'value', width: '50%' },
+]
+const userColumns = [
+    { title: '变量名', key: 'name', width: '45%' },
+    { title: '变量值', key: 'value', width: '45%' },
+    { title: '', key: 'action', width: 48 },
+]
 
 async function loadEnvTable(): Promise<void> {
     try {
-        // 并行加载系统变量和用户自定义变量
         const [sysResult, userData] = await Promise.all([
-            window.electronAPI.invoke<{ success: boolean; data: Record<string, string> }>('env:list'),
+            window.electronAPI.invoke<{ success: boolean; data?: { system: Record<string, string>; user: Record<string, string> } }>('env:list'),
             getEnv().catch(() => ({} as Record<string, string>))
         ])
 
-        const sysVars = sysResult.success ? sysResult.data : {}
-        const userVars = userData || {}
+        const systemVars = sysResult.success && sysResult.data ? sysResult.data.system : {}
+        const userVarsFromReg = sysResult.success && sysResult.data ? sysResult.data.user : {}
+        const dbVars = userData || {}
 
-        // 合并：自定义变量覆盖系统同名变量，且标记为 'user'
-        const merged = new Map<string, { key: string; value: string; source: 'system' | 'user' }>()
+        systemRows.value = Object.entries(systemVars).map(([k, v]) => ({ key: k, value: v }))
 
-        for (const [key, value] of Object.entries(sysVars)) {
-            merged.set(key, { key, value, source: 'system' })
-        }
-        for (const [key, value] of Object.entries(userVars)) {
-            merged.set(key, { key, value, source: 'user' })
-        }
-
-        envRows.value = Array.from(merged.values())
+        // 合并注册表用户变量和自定义变量（自定义覆盖同名）
+        const userMap = new Map<string, string>()
+        for (const [k, v] of Object.entries(userVarsFromReg)) userMap.set(k, v)
+        for (const [k, v] of Object.entries(dbVars)) userMap.set(k, v)
+        userRows.value = Array.from(userMap.entries()).map(([k, v]) => ({ key: k, value: v }))
     } catch {
-        envRows.value = []
+        systemRows.value = []
+        userRows.value = []
     }
 }
 
 function addRow(): void {
-    envRows.value.push({ key: '', value: '', source: 'user' })
-    editingRow.value = envRows.value.length - 1
+    userRows.value.push({ key: '', value: '' })
     nextTick(() => {
-        const idx = editingRow.value
-        if (idx !== null) {
-            inputRefs.value[idx]?.focus?.()
-        }
+        const rows = document.querySelectorAll<HTMLTableRowElement>('.env-table tbody tr')
+        const lastRow = rows[rows.length - 1]
+        lastRow?.querySelector<HTMLInputElement>('input')?.focus()
     })
 }
 
 function removeRow(index: number): void {
-    const row = envRows.value[index]
+    const row = userRows.value[index]
     if (row.key || row.value) {
         if (!confirm(`确定删除变量 "${row.key || '(空)'}" 吗？`)) return
     }
-    envRows.value.splice(index, 1)
-    if (editingRow.value === index) editingRow.value = null
+    userRows.value.splice(index, 1)
 }
 
 async function saveEnvTable(): Promise<void> {
-    const emptyKeys = envRows.value.filter(r => !r.key.trim() && r.source === 'user')
+    const emptyKeys = userRows.value.filter(r => !r.key.trim())
     if (emptyKeys.length > 0) {
         alert(`有 ${emptyKeys.length} 个变量名为空，请填写或删除`)
         return
     }
-    // 只保存用户自定义的变量（包括新增和修改过的）
     const obj: Record<string, string> = {}
-    for (const row of envRows.value) {
-        if (row.key && row.source === 'user') obj[row.key] = row.value
+    for (const row of userRows.value) {
+        if (row.key) obj[row.key] = row.value
     }
     try {
         await saveEnv(obj)
+        if (os === 'win') {
+            const result = await window.electronAPI.invoke<{ success: boolean; error?: string }>('env:save-user-vars', obj)
+            if (!result.success) {
+                alert('写入系统用户变量失败: ' + (result.error ?? '未知错误'))
+                return
+            }
+        }
         alert('保存成功，重启终端后生效')
     } catch (e) {
         alert('保存失败: ' + (e as Error).message)
@@ -180,7 +188,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <a-modal :open="visible" title="环境变量管理" :width="800" destroy-on-close @cancel="emit('close')">
+    <a-modal :open="visible" title="环境变量管理" :width="800" destroy-on-close @cancel="emit('close')" centered>
         <template #footer>
             <template v-if="os === 'mac'">
                 <div class="flex items-center justify-between">
@@ -193,9 +201,9 @@ onUnmounted(() => {
             </template>
             <template v-if="os === 'win'">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs dark:text-neutral-200">系统 {{ sysCount }} 个 · 用户 {{ userCount }} 个</span>
+                    <span />
                     <a-space>
-                        <a-button @click="addRow">
+                        <a-button v-if="activeTabKey === 'user'" @click="addRow">
                             添加变量
                         </a-button>
                         <a-button type="primary" @click="saveEnvTable">
@@ -213,50 +221,50 @@ onUnmounted(() => {
 
         <!-- Windows 可视化表格 -->
         <div v-else>
-            <table class="w-full text-xs border border-neutral-200 dark:border-neutral-700 rounded overflow-hidden">
-                <thead>
-                    <tr class="bg-gray-100 dark:bg-neutral-800">
-                        <th class="px-3 py-2 text-left text-neutral-500 dark:text-neutral-400 w-2/5">变量名</th>
-                        <th class="px-3 py-2 text-left text-neutral-500 dark:text-neutral-400 w-2/5">变量值</th>
-                        <th class="px-3 py-2 text-left text-neutral-500 dark:text-neutral-400 w-16">来源</th>
-                        <th class="px-3 py-2 w-12" />
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="(row, i) in envRows" :key="i"
-                        class="border-t border-neutral-200 dark:border-neutral-700"
-                        :class="row.source === 'system' ? 'opacity-70' : ''">
-                        <td class="px-2 py-1">
-                            <a-input :ref="(el: any) => { if (el) inputRefs[i] = el }" v-model:value="row.key"
-                                class="bg-transparent border-0 text-neutral-700 dark:text-neutral-200 h-7 text-xs"
-                                placeholder="变量名" :disabled="row.source === 'system'" />
-                        </td>
-                        <td class="px-2 py-1">
-                            <a-input v-model:value="row.value"
-                                class="bg-transparent border-0 text-neutral-700 dark:text-neutral-200 h-7 text-xs"
-                                placeholder="变量值" :disabled="row.source === 'system'" />
-                        </td>
-                        <td class="px-2 py-1">
-                            <span class="text-xs"
-                                :class="row.source === 'system' ? 'text-neutral-400' : 'text-blue-500'">
-                                {{ row.source === 'system' ? '系统' : '用户' }}
-                            </span>
-                        </td>
-                        <td class="px-2 py-1 text-center">
-                            <a-button v-if="row.source === 'user'" type="text"
-                                class="text-neutral-400 dark:text-neutral-500 h-auto px-1"
-                                @click="removeRow(i)">
-                                ×
-                            </a-button>
-                        </td>
-                    </tr>
-                    <tr v-if="envRows.length === 0">
-                        <td colspan="4" class="px-3 py-4 text-center text-neutral-400 dark:text-neutral-500">
-                            暂无环境变量
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <a-tabs v-model:activeKey="activeTabKey" size="small" class="env-tabs">
+                <a-tab-pane key="user" :tab="`用户变量 (${userRows.length})`">
+                    <a-table :columns="userColumns" :dataSource="userRows" :pagination="false" :scroll="{ y: '50vh' }" :rowKey="(_: any, i: number) => i" class="env-table">
+                        <template #bodyCell="{ column, record, index }">
+                            <template v-if="column.key === 'name'">
+                                <a-input v-model:value="record.key"
+                                    class="bg-transparent border-0 text-neutral-700 dark:text-neutral-200 h-7 text-xs"
+                                    placeholder="变量名" />
+                            </template>
+                            <template v-else-if="column.key === 'value'">
+                                <a-input v-model:value="record.value"
+                                    class="bg-transparent border-0 text-neutral-700 dark:text-neutral-200 h-7 text-xs"
+                                    placeholder="变量值" />
+                            </template>
+                            <template v-else-if="column.key === 'action'">
+                                <a-button type="text"
+                                    class="text-neutral-400 dark:text-neutral-500 h-auto px-1"
+                                    @click="removeRow(index)">
+                                    ×
+                                </a-button>
+                            </template>
+                        </template>
+                        <template #emptyText>
+                            <div class="py-4 text-center text-neutral-400 dark:text-neutral-500">暂无用户变量</div>
+                        </template>
+                    </a-table>
+                </a-tab-pane>
+                <a-tab-pane key="system" :tab="`系统变量 (${systemRows.length})`">
+                    <a-table :columns="sysColumns" :dataSource="systemRows" :pagination="false"
+                         :scroll="{ y: '50vh' }" :rowKey="(_: any, i: number) => i" class="env-table">
+                        <template #bodyCell="{ column, record }">
+                            <template v-if="column.key === 'name'">
+                                <span class="text-xs text-neutral-700 dark:text-neutral-200">{{ record.key }}</span>
+                            </template>
+                            <template v-else-if="column.key === 'value'">
+                                <span class="text-xs text-neutral-700 dark:text-neutral-200">{{ record.value }}</span>
+                            </template>
+                        </template>
+                        <template #emptyText>
+                            <div class="py-4 text-center text-neutral-400 dark:text-neutral-500">暂无系统变量</div>
+                        </template>
+                    </a-table>
+                </a-tab-pane>
+            </a-tabs>
         </div>
     </a-modal>
 </template>

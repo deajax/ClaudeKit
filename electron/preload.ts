@@ -19,6 +19,7 @@ const ALLOWED_CHANNELS = [
     'env:read-profile',
     'env:write-profile',
     'env:export-vars',
+    'env:save-user-vars',
     // 配置操作（Phase 4）
     'config:read',
     'config:write',
@@ -35,6 +36,10 @@ const ALLOWED_CHANNELS = [
     'task:update',
     'task:delete',
     'task:reset',
+    // 窗口控制
+    'window:minimize',
+    'window:maximize',
+    'window:close',
     // 系统操作
     'system:get-os',
     'system:check-claude',

@@ -166,17 +166,104 @@ export function registerEnvIPC(): void {
         }
     })
 
-    // ---- env:list — 列出当前进程环境变量（过滤敏感密钥） ----
+    // ---- env:save-user-vars — 将用户变量写入 Windows 注册表 (HKCU\Environment) ----
+    ipcMain.handle('env:save-user-vars', async (_event, vars: Record<string, string>) => {
+        if (process.platform !== 'win32') {
+            return { success: false, error: '仅 Windows 支持' }
+        }
+        try {
+            const { execSync } = await import('child_process')
+
+            function readUserVars(): Record<string, string> {
+                try {
+                    const output = execSync('reg query "HKCU\\Environment"', { encoding: 'utf-8', timeout: 5000 })
+                    const result: Record<string, string> = {}
+                    for (const line of output.split(/\r?\n/)) {
+                        const parts = line.trim().split(/\s{2,}/)
+                        if (parts.length >= 3 && parts[1].startsWith('REG_')) {
+                            result[parts[0]] = parts.slice(2).join(' ')
+                        }
+                    }
+                    return result
+                } catch {
+                    return {}
+                }
+            }
+
+            const currentVars = readUserVars()
+            const newKeys = new Set(Object.keys(vars))
+
+            // 删除不再存在的变量
+            for (const key of Object.keys(currentVars)) {
+                if (!newKeys.has(key)) {
+                    execSync(`reg delete "HKCU\\Environment" /v "${key}" /f`, { encoding: 'utf-8', timeout: 5000 })
+                }
+            }
+
+            // 添加或更新变量
+            for (const [key, value] of Object.entries(vars)) {
+                if (currentVars[key] !== value) {
+                    const escapedValue = value.replace(/"/g, '\\"')
+                    execSync(`reg add "HKCU\\Environment" /v "${key}" /t REG_SZ /d "${escapedValue}" /f`, { encoding: 'utf-8', timeout: 5000 })
+                }
+            }
+
+            // 通知系统环境变量已变更
+            try {
+                execSync(
+                    `powershell.exe -NoProfile -Command "[System.Environment]::SetEnvironmentVariable('PATH', [System.Environment]::GetEnvironmentVariable('PATH', 'User'), 'User')"`,
+                    { encoding: 'utf-8', timeout: 5000, windowsHide: true }
+                )
+            } catch { /* ignore */ }
+
+            return { success: true }
+        } catch (e) {
+            return { success: false, error: (e as Error).message }
+        }
+    })
+
+    // ---- env:list — 列出环境变量（Windows 区分系统/用户，macOS/Linux 用 process.env） ----
     ipcMain.handle('env:list', async () => {
         try {
-            const filtered: Record<string, string> = {}
             const sensitivePattern = /(?:secret|password|credential|private_key)/i
+
+            if (process.platform === 'win32') {
+                const { execSync } = await import('child_process')
+
+                function readRegistry(key: string): Record<string, string> {
+                    try {
+                        const output = execSync(`reg query "${key}"`, { encoding: 'utf-8', timeout: 5000 })
+                        const vars: Record<string, string> = {}
+                        const lines = output.split(/\r?\n/)
+                        for (const line of lines) {
+                            const parts = line.trim().split(/\s{2,}/)
+                            if (parts.length >= 3 && parts[1].startsWith('REG_')) {
+                                const name = parts[0]
+                                const value = parts.slice(2).join(' ')
+                                if (!sensitivePattern.test(name)) {
+                                    vars[name] = value
+                                }
+                            }
+                        }
+                        return vars
+                    } catch {
+                        return {}
+                    }
+                }
+
+                const system = readRegistry('HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment')
+                const user = readRegistry('HKCU\\Environment')
+                return { success: true, data: { system, user } }
+            }
+
+            // macOS/Linux: process.env 包含完整环境变量（全部归为系统）
+            const filtered: Record<string, string> = {}
             for (const [key, value] of Object.entries(process.env)) {
                 if (value !== undefined && !sensitivePattern.test(key)) {
                     filtered[key] = value
                 }
             }
-            return { success: true, data: filtered }
+            return { success: true, data: { system: filtered, user: {} } }
         } catch (e) {
             return { success: false, error: (e as Error).message }
         }

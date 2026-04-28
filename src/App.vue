@@ -277,6 +277,11 @@ function onWizardComplete(): void {
     settingsStore.updateWizardCompleted(true)
 }
 
+// 窗口控制（Windows）
+function winMinimize(): void { window.electronAPI?.invoke('window:minimize') }
+function winMaximize(): void { window.electronAPI?.invoke('window:maximize') }
+function winClose(): void { window.electronAPI?.invoke('window:close') }
+
 function onRunTask(task: { id: string; name: string; command: string; cwd: string; providerId: string }): void {
     showTaskDrawer.value = false
     const envVars = providerStore.activeProviderId
@@ -310,13 +315,13 @@ function onRunTask(task: { id: string; name: string; command: string; cwd: strin
                 </a-tabs>
 
                 <div v-if="os === 'win'" class="ml-auto flex h-full windows-controls nodrag-region">
-                    <div class="windows-controls--item">
+                    <div class="windows-controls--item" @click="winMinimize">
                         <RiSubtractLine class="text-base" />
                     </div>
-                    <div class="windows-controls--item">
+                    <div class="windows-controls--item" @click="winMaximize">
                         <RiFullscreenLine class="text-sm" />
                     </div>
-                    <div class="windows-controls--item hover:bg-red-600! hover:text-white">
+                    <div class="windows-controls--item hover:bg-red-600! hover:text-white" @click="winClose">
                         <RiCloseFill class="text-lg" />
                     </div>
                 </div>
@@ -364,7 +369,7 @@ function onRunTask(task: { id: string; name: string; command: string; cwd: strin
 
         <!-- 任务 Drawer -->
         <a-drawer v-model:open="showTaskDrawer" title="运行任务" placement="top" height="auto" :bodyStyle="{ padding: 0 }"
-            destroy-on-close @close="showTaskDrawer = false" rootClassName="task-drawer">
+            destroy-on-close @close="showTaskDrawer = false" rootClassName="task-drawer" class="nodrag-region">
             <TaskDrawer @close="showTaskDrawer = false" @run-task="onRunTask" />
         </a-drawer>
 

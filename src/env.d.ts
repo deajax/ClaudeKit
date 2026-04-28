@@ -22,6 +22,7 @@ type AllowedChannel =
     | 'env:read-profile'
     | 'env:write-profile'
     | 'env:export-vars'
+    | 'env:save-user-vars'
     | 'config:read'
     | 'config:write'
     | 'config:read-help'
@@ -44,6 +45,9 @@ type AllowedChannel =
     | 'system:balance-query'
     | 'system:check-git'
     | 'system:test-provider'
+    | 'window:minimize'
+    | 'window:maximize'
+    | 'window:close'
 
 interface ElectronAPI {
     invoke: <T = unknown>(channel: AllowedChannel, ...args: unknown[]) => Promise<T>

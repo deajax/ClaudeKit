@@ -7,6 +7,7 @@ import { registerEnvIPC } from './ipc/env'
 import { registerConfigIPC } from './ipc/config'
 import { registerProviderIPC } from './ipc/provider'
 import { registerTaskIPC } from './ipc/task'
+import { registerWindowIPC } from './ipc/window'
 import { destroyAllTerminals } from './ipc/terminal'
 
 function createWindow(): void {
@@ -52,6 +53,7 @@ function registerIpcModules(): void {
     registerConfigIPC()
     registerProviderIPC()
     registerTaskIPC()
+    registerWindowIPC()
 }
 
 app.whenReady().then(() => {
