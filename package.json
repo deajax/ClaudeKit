@@ -14,11 +14,6 @@
     "files": [
       "out/**/*"
     ],
-    "publish": {
-      "provider": "github",
-      "owner": "deajax",
-      "repo": "ClaudeKit"
-    },
     "mac": {
       "icon": "build/icon.icns",
       "target": [

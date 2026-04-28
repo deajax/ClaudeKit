@@ -11,14 +11,13 @@ on:
 permissions:
   contents: write
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   tag:
     runs-on: ubuntu-latest
     outputs:
       tag: v${{ inputs.version }}
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - uses: actions/checkout@v4
@@ -33,24 +32,21 @@ jobs:
           git add package.json
           git commit -m "chore: bump version to $TAG"
           git tag "$TAG"
-          git push origin "$TAG"
+          git push origin "$TAG" --force
         env:
           VERSION_INPUT: ${{ inputs.version }}
 
   build:
     needs: tag
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      CSC_IDENTITY_AUTO_DISCOVERY: false
     strategy:
+      fail-fast: false
       matrix:
-        include:
-          - os: macos-13
-            arch: x64
-            target: mac
-          - os: macos-latest
-            arch: arm64
-            target: mac
-          - os: windows-latest
-            arch: x64
-            target: win
+        os:
+          - macos-latest
+          - windows-latest
 
     runs-on: ${{ matrix.os }}
 
@@ -63,6 +59,10 @@ jobs:
         with:
           node-version: 22
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Install dependencies
         run: npm ci
 
@@ -73,20 +73,25 @@ jobs:
       - name: Rebuild native modules for Electron
         run: npm run rebuild
 
+      - name: Build frontend + main
+        run: npm run build
+
       - name: Package
-        run: npm run package
+        run: npx electron-builder --config --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ClaudeKit-${{ needs.tag.outputs.tag }}-${{ matrix.target }}-${{ matrix.arch }}
+          name: ClaudeKit-${{ needs.tag.outputs.tag }}-${{ matrix.os }}
           path: release/*
 
   release:
     needs: build
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Download all artifacts
