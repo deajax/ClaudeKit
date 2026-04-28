@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "ClaudeKit - Claude Code 桌面管理工具",
   "main": "./out/main/index.js",
-  "author": "",
+  "author": "deajax",
   "license": "MIT",
   "build": {
     "appId": "com.claudekit.app",
@@ -12,26 +12,39 @@
       "output": "release"
     },
     "files": [
-      "out/**/*",
-      "!out/renderer/**/*"
+      "out/**/*"
     ],
+    "publish": {
+      "provider": "github",
+      "owner": "deajax",
+      "repo": "ClaudeKit"
+    },
     "mac": {
       "icon": "build/icon.icns",
-      "target": ["dmg", "zip"]
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] },
+        { "target": "zip", "arch": ["x64", "arm64"] }
+      ]
     },
     "win": {
       "icon": "build/icon.ico",
-      "target": ["nsis"]
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ]
     },
     "linux": {
       "icon": "build/icon.png",
-      "target": ["AppImage"]
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] }
+      ]
     }
   },
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
+    "package": "electron-vite build && electron-builder --config",
+    "publish": "electron-vite build && electron-builder --config --publish always",
     "rebuild": "electron-builder install-app-deps",
     "postinstall": "chmod +x node_modules/node-pty/prebuilds/*/spawn-helper 2>/dev/null; exit 0"
   },
