@@ -931,7 +931,6 @@ function registerTaskIPC() {
   });
 }
 function createWindow() {
-  const iconPath = is.dev ? path.join(process.cwd(), "build/icon.png") : path.join(__dirname, "../../build/icon.png");
   const mainWindow = new electron.BrowserWindow({
     width: 1200,
     height: 800,
@@ -941,7 +940,7 @@ function createWindow() {
     frame: false,
     titleBarStyle: "hiddenInset",
     trafficLightPosition: { x: 16, y: 16 },
-    icon: iconPath,
+    icon: path.join(__dirname, "../../build/icon.png"),
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.js"),
       sandbox: false,
@@ -972,10 +971,6 @@ function registerIpcModules() {
 }
 electron.app.whenReady().then(() => {
   electronApp.setAppUserModelId("com.claudekit.desktop");
-  if (process.platform === "darwin" && electron.app.dock) {
-    const dockIconPath = is.dev ? path.join(process.cwd(), "build/icon.icns") : path.join(__dirname, "../../build/icon.icns");
-    electron.app.dock.setIcon(dockIconPath);
-  }
   initDataDir();
   electron.app.on("browser-window-created", (_, window) => {
     optimizer.watchWindowShortcuts(window);

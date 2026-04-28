@@ -14,23 +14,53 @@
     "files": [
       "out/**/*"
     ],
+    "afterPack": "./scripts/applyIcon.js",
+    "nodeGypRebuild": false,
+    "npmRebuild": false,
     "mac": {
       "icon": "build/icon.icns",
       "target": [
-        { "target": "dmg", "arch": ["x64", "arm64"] },
-        { "target": "zip", "arch": ["x64", "arm64"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ]
     },
     "win": {
       "icon": "build/icon.ico",
+      "signAndEditExecutable": false,
       "target": [
-        { "target": "nsis", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
     },
     "linux": {
       "icon": "build/icon.png",
       "target": [
-        { "target": "AppImage", "arch": ["x64"] }
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     }
   },
@@ -68,6 +98,7 @@
     "electron-builder": "^25.1.8",
     "electron-vite": "^2.3.0",
     "less": "^4.2.1",
+    "rcedit": "^5.0.2",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.2",
     "unplugin-vue-components": "^28.5.0",

@@ -45,7 +45,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-13
           - os: macos-latest
           - os: windows-latest
 
@@ -77,15 +76,9 @@ jobs:
       - name: Build frontend + main
         run: npm run build
 
-      - name: Package (macOS Intel)
-        if: matrix.os == 'macos-14'
-        run: npx electron-builder --config --publish never --x64
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Package (macOS ARM)
+      - name: Package (macOS)
         if: matrix.os == 'macos-latest'
-        run: npx electron-builder --config --publish never --arm64
+        run: npx electron-builder --config --publish never --x64 --arm64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
