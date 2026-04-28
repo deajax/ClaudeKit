@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, onUnmounted, computed } from 'vue'
+import { ref, watch, nextTick, onUnmounted, computed, shallowRef } from 'vue'
 import { getOs } from '@/lib/utils'
 import { getEnv, saveEnv } from '@/lib/db'
-import { monaco } from '@/monaco'
 import { useSettingsStore } from '@/stores/settings'
 import { storeToRefs } from 'pinia'
 
@@ -22,7 +21,9 @@ const isDark = computed(() => settings.value.theme === 'dark')
 // ---- macOS: Monaco Editor 模式 ----
 const shellConfigPath = ref('')
 const shellMonacoContainer = ref<HTMLElement | null>(null)
-let shellEditor: monaco.editor.IStandaloneCodeEditor | null = null
+type MonacoType = typeof import('monaco-editor')
+const monacoRef = shallowRef<MonacoType | null>(null)
+let shellEditor: import('monaco-editor').editor.IStandaloneCodeEditor | null = null
 
 function disposeEditor(): void {
     shellEditor?.dispose()
@@ -31,18 +32,24 @@ function disposeEditor(): void {
 
 function initEditor(): void {
     if (shellEditor || !shellMonacoContainer.value) return
-    shellEditor = monaco.editor.create(shellMonacoContainer.value, {
-        value: '',
-        language: 'shell',
-        theme: isDark.value ? 'vs-dark' : 'vs',
-        fontSize: 13,
-        fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace",
-        minimap: { enabled: false },
-        lineNumbers: 'on',
-        scrollBeyondLastLine: false,
-        automaticLayout: true,
-        tabSize: 2,
-        scrollbar: { verticalScrollbarSize: 6, horizontalScrollbarSize: 6 }
+    // Lazy-import monaco-editor to reduce bundle size on Windows
+    import('monaco-editor').then((monaco) => {
+        monacoRef.value = monaco
+        if (!shellMonacoContainer.value) return
+        shellEditor = monaco.editor.create(shellMonacoContainer.value, {
+            value: '',
+            language: 'shell',
+            theme: isDark.value ? 'vs-dark' : 'vs',
+            fontSize: 13,
+            fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace",
+            minimap: { enabled: false },
+            lineNumbers: 'on',
+            scrollBeyondLastLine: false,
+            automaticLayout: true,
+            tabSize: 2,
+            scrollbar: { verticalScrollbarSize: 6, horizontalScrollbarSize: 6 }
+        })
+        loadShellConfig()
     })
 }
 
@@ -85,7 +92,6 @@ watch(() => props.visible, async (open) => {
     if (os === 'mac') {
         await nextTick()
         initEditor()
-        loadShellConfig()
     } else {
         loadEnvTable()
     }
@@ -129,7 +135,10 @@ function addRow(): void {
     envRows.value.push({ key: '', value: '', source: 'user' })
     editingRow.value = envRows.value.length - 1
     nextTick(() => {
-        inputRefs.value[editingRow.value]?.focus?.()
+        const idx = editingRow.value
+        if (idx !== null) {
+            inputRefs.value[idx]?.focus?.()
+        }
     })
 }
 

@@ -429,6 +429,12 @@ function registerTerminalIPC() {
     return { success: true, sessions: Array.from(sessions.keys()) };
   });
 }
+function destroyAllTerminals() {
+  for (const [id, pty] of sessions) {
+    pty.kill();
+  }
+  sessions.clear();
+}
 function writeWithSudo$1(filePath, content) {
   return new Promise((resolve, reject) => {
     const tmpPath = filePath + ".tmp";
@@ -568,7 +574,14 @@ function registerEnvIPC() {
   });
   electron.ipcMain.handle("env:list", async () => {
     try {
-      return { success: true, data: { ...process.env } };
+      const filtered = {};
+      const sensitivePattern = /(?:secret|password|credential|private_key)/i;
+      for (const [key, value] of Object.entries(process.env)) {
+        if (value !== void 0 && !sensitivePattern.test(key)) {
+          filtered[key] = value;
+        }
+      }
+      return { success: true, data: filtered };
     } catch (e) {
       return { success: false, error: e.message };
     }
@@ -641,13 +654,14 @@ function registerEnvIPC() {
   });
   electron.ipcMain.handle("system:install-claude", async () => {
     try {
-      const { execSync } = await import("child_process");
-      const output = execSync("npm install -g @anthropic-ai/claude-code", {
+      const { exec } = await import("child_process");
+      const { promisify } = await import("util");
+      const execAsync = promisify(exec);
+      const { stdout } = await execAsync("npm install -g @anthropic-ai/claude-code", {
         encoding: "utf-8",
-        timeout: 12e4,
-        stdio: "pipe"
+        timeout: 12e4
       });
-      return { success: true, output };
+      return { success: true, output: stdout || "" };
     } catch (e) {
       return { success: false, error: e.message };
     }
@@ -970,4 +984,7 @@ electron.app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     electron.app.quit();
   }
+});
+electron.app.on("will-quit", () => {
+  destroyAllTerminals();
 });

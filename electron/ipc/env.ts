@@ -166,10 +166,17 @@ export function registerEnvIPC(): void {
         }
     })
 
-    // ---- env:list — 列出当前进程环境变量 ----
+    // ---- env:list — 列出当前进程环境变量（过滤敏感密钥） ----
     ipcMain.handle('env:list', async () => {
         try {
-            return { success: true, data: { ...process.env } }
+            const filtered: Record<string, string> = {}
+            const sensitivePattern = /(?:secret|password|credential|private_key)/i
+            for (const [key, value] of Object.entries(process.env)) {
+                if (value !== undefined && !sensitivePattern.test(key)) {
+                    filtered[key] = value
+                }
+            }
+            return { success: true, data: filtered }
         } catch (e) {
             return { success: false, error: (e as Error).message }
         }
@@ -256,13 +263,14 @@ export function registerEnvIPC(): void {
     // ---- system:install-claude ----
     ipcMain.handle('system:install-claude', async () => {
         try {
-            const { execSync } = await import('child_process')
-            const output = execSync('npm install -g @anthropic-ai/claude-code', {
+            const { exec } = await import('child_process')
+            const { promisify } = await import('util')
+            const execAsync = promisify(exec)
+            const { stdout } = await execAsync('npm install -g @anthropic-ai/claude-code', {
                 encoding: 'utf-8',
-                timeout: 120000,
-                stdio: 'pipe'
+                timeout: 120000
             })
-            return { success: true, output }
+            return { success: true, output: stdout || '' }
         } catch (e) {
             return { success: false, error: (e as Error).message }
         }

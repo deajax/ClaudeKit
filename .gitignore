@@ -4,3 +4,4 @@ tsconfig.web.tsbuildinfo
 tsconfig.node.tsbuildinfo
 /out
 /out/renderer
+/.claude/worktrees

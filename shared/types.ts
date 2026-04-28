@@ -72,7 +72,7 @@ export interface BalanceInfo {
     is_available: boolean
     balance_infos: {
         currency: string
-        balance: string
+        total_balance: string
     }[]
 }
 

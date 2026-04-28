@@ -40,6 +40,8 @@ async function checkUpdate(): Promise<void> {
             updateAvailable.value = result.latest !== appVersion.value
         }
     } catch {
+        latestVersion.value = ''
+        updateAvailable.value = false
         alert('检查更新失败，请稍后重试')
     }
 }

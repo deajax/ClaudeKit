@@ -7,6 +7,7 @@ import { registerEnvIPC } from './ipc/env'
 import { registerConfigIPC } from './ipc/config'
 import { registerProviderIPC } from './ipc/provider'
 import { registerTaskIPC } from './ipc/task'
+import { destroyAllTerminals } from './ipc/terminal'
 
 function createWindow(): void {
     const mainWindow = new BrowserWindow({
@@ -75,4 +76,8 @@ app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit()
     }
+})
+
+app.on('will-quit', () => {
+    destroyAllTerminals()
 })

@@ -69,12 +69,7 @@ function closeInstallGuide(): void {
 }
 
 async function runEnvCheck(): Promise<void> {
-    try {
-        const result = await window.electronAPI.invoke<{ success: boolean; platform: string }>('system:get-os')
-        shellType.value = os === 'mac' ? 'zsh' : os === 'win' ? 'powershell' : 'bash'
-    } catch {
-        shellType.value = '未知'
-    }
+    shellType.value = os === 'mac' ? 'zsh' : os === 'win' ? 'powershell' : 'bash'
 
     async function checkOne(key: string, channel: string): Promise<{ key: string; success: boolean; version: string }> {
         try {
@@ -199,7 +194,7 @@ function openEditCard(card: (typeof BUILTIN_PROVIDERS[number]) & { id: string; A
         const saved = providerStore2.providers.find(p => p.BASE_URL === card.BASE_URL)
         editingProvider.value = saved ?? null
     } else {
-        editingProvider.value = { id: '', ...card } as Provider & { id: string }
+        editingProvider.value = { ...card } as Provider & { id: string }
     }
     showProviderModal.value = true
 }
@@ -264,7 +259,7 @@ onMounted(() => {
             <a-steps :current="currentStep" :items="steps" label-placement="vertical" />
         </div>
 
-        <div class="bg-white dark:bg-[#141414] rounded-xl shadow-xl w-xl max-h-[85vh] min-h min-h-102 overflow-y-auto flex flex-col">
+        <div class="bg-white dark:bg-[#141414] rounded-xl shadow-xl w-xl max-h-[85vh] min-h-102 overflow-y-auto flex flex-col">
             <!-- 步骤内容 -->
             <div class="flex-1 p-6 overflow-y-auto min-h-0">
                 <!-- Step 0: 环境检测 -->

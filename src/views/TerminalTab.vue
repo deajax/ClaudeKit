@@ -183,7 +183,7 @@ watch(
 watch(
     () => props.envVars,
     (_newEnv, _oldEnv) => {
-        if (_oldEnv && JSON.stringify(_newEnv) !== JSON.stringify(_oldEnv)) {
+        if (JSON.stringify(_newEnv) !== JSON.stringify(_oldEnv)) {
             destroy()
             nextTick(() => createTerminal())
         }

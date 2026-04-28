@@ -42,6 +42,8 @@ type AllowedChannel =
     | 'system:install-claude'
     | 'system:check-update'
     | 'system:balance-query'
+    | 'system:check-git'
+    | 'system:test-provider'
 
 interface ElectronAPI {
     invoke: <T = unknown>(channel: AllowedChannel, ...args: unknown[]) => Promise<T>
