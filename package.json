@@ -5,6 +5,29 @@
   "main": "./out/main/index.js",
   "author": "",
   "license": "MIT",
+  "build": {
+    "appId": "com.claudekit.app",
+    "productName": "ClaudeKit",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "!out/renderer/**/*"
+    ],
+    "mac": {
+      "icon": "build/icon.icns",
+      "target": ["dmg", "zip"]
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": ["nsis"]
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "target": ["AppImage"]
+    }
+  },
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
