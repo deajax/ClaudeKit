@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClaudeKit — 跨平台 Claude Code 桌面伴侣</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f4ff',
+                            100: '#dbe4ff',
+                            200: '#bac8ff',
+                            300: '#91a7ff',
+                            400: '#748ffc',
+                            500: '#5c7cfa',
+                            600: '#4c6ef5',
+                            700: '#4263eb',
+                            800: '#3b5bdb',
+                            900: '#364fc7',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+    <style>
+        html { scroll-behavior: smooth; }
+        .gradient-text {
+            background: linear-gradient(135deg, #4c6ef5 0%, #748ffc 50%, #9775fa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(76,110,245,0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .feature-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.12);
+        }
+        .btn-primary {
+            transition: all 0.2s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(76, 110, 245, 0.35);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .feature-card, .btn-primary { transition: none; }
+            .feature-card:hover { transform: none; }
+            .btn-primary:hover { transform: none; }
+        }
+    </style>
+</head>
+<body class="bg-white text-neutral-800 antialiased">
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-neutral-100">
+        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold text-sm">CK</div>
+                <span class="font-semibold text-lg text-neutral-800">ClaudeKit</span>
+            </div>
+            <div class="flex items-center gap-6">
+                <a href="#features" class="text-sm text-neutral-500 hover:text-neutral-800 transition-colors">功能特性</a>
+                <a href="#download" class="text-sm text-neutral-500 hover:text-neutral-800 transition-colors">下载</a>
+                <a href="https://github.com/deajax/claudekit" target="_blank" rel="noopener noreferrer"
+                   class="text-sm text-neutral-500 hover:text-neutral-800 transition-colors flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    GitHub
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <div class="hero-glow" style="top: 10%; left: -10%;"></div>
+        <div class="hero-glow" style="bottom: 20%; right: -5%; background: radial-gradient(circle, rgba(151,117,250,0.12) 0%, transparent 70%);"></div>
+
+        <div class="max-w-4xl mx-auto px-6 text-center pt-24 pb-16 relative">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-50 text-brand-700 text-sm font-medium mb-8 border border-brand-100">
+                <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                v0.1.0 · 跨平台可用
+            </div>
+
+            <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight mb-6">
+                <span class="gradient-text">Claude Code</span>
+                <br />
+                <span class="text-neutral-800">桌面伴侣</span>
+            </h1>
+
+            <p class="text-lg md:text-xl text-neutral-500 max-w-2xl mx-auto mb-10 leading-relaxed">
+                为 Claude Code CLI 量身打造的桌面管理工具 —— 自由切换模型提供商、
+                管理终端会话、配置环境变量，让 AI 编码体验更流畅。
+            </p>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#download"
+                   class="btn-primary inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-brand-600 text-white font-semibold text-base shadow-lg">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    下载 ClaudeKit
+                </a>
+                <a href="#features"
+                   class="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl border border-neutral-200 text-neutral-700 font-semibold text-base hover:bg-neutral-50 transition-colors">
+                    了解功能
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                </a>
+            </div>
+
+            <!-- Feature Pills -->
+            <div class="flex flex-wrap justify-center gap-3 mt-12">
+                <span class="px-4 py-2 rounded-lg bg-neutral-100 text-neutral-600 text-sm font-medium">macOS + Windows</span>
+                <span class="px-4 py-2 rounded-lg bg-neutral-100 text-neutral-600 text-sm font-medium">多模型商切换</span>
+                <span class="px-4 py-2 rounded-lg bg-neutral-100 text-neutral-600 text-sm font-medium">内置终端</span>
+                <span class="px-4 py-2 rounded-lg bg-neutral-100 text-neutral-600 text-sm font-medium">环境变量管理</span>
+                <span class="px-4 py-2 rounded-lg bg-neutral-100 text-neutral-600 text-sm font-medium">任务自动化</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-24 bg-neutral-50">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-neutral-800 mb-4">核心功能</h2>
+                <p class="text-neutral-500 max-w-xl mx-auto">围绕 Claude Code CLI 的工作流，提供一系列提升效率的工具。</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Feature 1 -->
+                <div class="feature-card rounded-2xl bg-white p-8 border border-neutral-100">
+                    <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-neutral-800 mb-2">模型提供商切换</h3>
+                    <p class="text-sm text-neutral-500 leading-relaxed">内置 DeepSeek、OpenAI 等主流模型商配置模板，一键切换，自动注入 API 密钥与环境变量。</p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="feature-card rounded-2xl bg-white p-8 border border-neutral-100">
+                    <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-neutral-800 mb-2">终端集成</h3>
+                    <p class="text-sm text-neutral-500 leading-relaxed">基于 xterm.js 的全功能嵌入式终端，标签页管理、自动适配主题、支持多会话并行。附带一键启动 Claude Code。</p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="feature-card rounded-2xl bg-white p-8 border border-neutral-100">
+                    <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-neutral-800 mb-2">环境变量管理</h3>
+                    <p class="text-sm text-neutral-500 leading-relaxed">图形化管理 Shell Profile 文件（.zshrc / .bashrc / PowerShell Profile），支持 Monaco 编辑器、语法高亮、敏感变量过滤。</p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="feature-card rounded-2xl bg-white p-8 border border-neutral-100">
+                    <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-neutral-800 mb-2">任务管理</h3>
+                    <p class="text-sm text-neutral-500 leading-relaxed">预设常用命令与参数模板，一键发送到终端执行。减少重复输入，专注编码本身。</p>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="feature-card rounded-2xl bg-white p-8 border border-neutral-100">
+                    <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-neutral-800 mb-2">深色模式</h3>
+                    <p class="text-sm text-neutral-500 leading-relaxed">精心调校的明暗双主题，一键切换，过渡流畅。终端、编辑器、所有 UI 面板同步适配。</p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="feature-card rounded-2xl bg-white p-8 border border-neutral-100">
+                    <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-neutral-800 mb-2">余额查询</h3>
+                    <p class="text-sm text-neutral-500 leading-relaxed">集成模型商余额查询 API，启动自动检测、手动刷新，底部状态栏实时显示。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Preview -->
+    <section class="py-24 bg-white">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-neutral-800 mb-4">技术架构</h2>
+                <p class="text-neutral-500 max-w-xl mx-auto">Electron + Vue 3 + TypeScript，全链路类型安全。</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-brand-600 mb-2">Electron</div>
+                    <p class="text-sm text-neutral-500">主进程负责 Pty 终端、文件 I/O、系统调用。通过 IPC 通道与前端通信。</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-brand-600 mb-2">Vue 3</div>
+                    <p class="text-sm text-neutral-500">组合式 API + TypeScript，Pinia 状态管理，Ant Design Vue 4.x UI 组件库。</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-brand-600 mb-2">JSON 存储</div>
+                    <p class="text-sm text-neutral-500">~/.ClaudeCLI/ 目录下 JSON 文件持久化，零依赖数据库，跨平台兼容。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download -->
+    <section id="download" class="py-24 bg-neutral-50">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold text-neutral-800 mb-4">下载 ClaudeKit</h2>
+            <p class="text-neutral-500 max-w-xl mx-auto mb-12">当前最新版本 v0.1.0，支持 macOS 与 Windows 平台。</p>
+
+            <div class="grid sm:grid-cols-2 gap-6 max-w-2xl mx-auto mb-16">
+                <a href="https://github.com/deajax/claudekit/releases/download/v0.1.0/ClaudeKit-0.1.0.dmg"
+                   class="feature-card rounded-2xl bg-white p-8 border border-neutral-100 flex flex-col items-center gap-4 group">
+                    <div class="w-16 h-16 rounded-2xl bg-neutral-100 flex items-center justify-center group-hover:bg-brand-50 transition-colors">
+                        <svg class="w-8 h-8 text-neutral-600 group-hover:text-brand-600 transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M21.5 15a3 3 0 00-3-3h-.1l.6-4.2a3 3 0 00-5.9-1.2l-.3.3-.3-.3a3 3 0 00-5.9 1.2l.6 4.2h-.1a3 3 0 000 6H9v2h6v-2h1.5a3 3 0 003-3z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold text-neutral-800 mb-1">macOS</h3>
+                        <p class="text-sm text-neutral-400">Intel & Apple Silicon</p>
+                    </div>
+                    <span class="text-sm font-medium text-brand-600">下载 .dmg</span>
+                </a>
+
+                <a href="https://github.com/deajax/claudekit/releases/download/v0.1.0/ClaudeKit-0.1.0.exe"
+                   class="feature-card rounded-2xl bg-white p-8 border border-neutral-100 flex flex-col items-center gap-4 group">
+                    <div class="w-16 h-16 rounded-2xl bg-neutral-100 flex items-center justify-center group-hover:bg-brand-50 transition-colors">
+                        <svg class="w-8 h-8 text-neutral-600 group-hover:text-brand-600 transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M4 3h16a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1zm0 8h16a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4a1 1 0 011-1zm0 8h16a1 1 0 011 1v1a1 1 0 01-1 1H4a1 1 0 01-1-1v-1a1 1 0 011-1z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold text-neutral-800 mb-1">Windows</h3>
+                        <p class="text-sm text-neutral-400">64-bit</p>
+                    </div>
+                    <span class="text-sm font-medium text-brand-600">下载 .exe</span>
+                </a>
+            </div>
+
+            <p class="text-sm text-neutral-400 mb-4">亦可在 GitHub Releases 查看所有版本与更新日志：</p>
+            <a href="https://github.com/deajax/claudekit/releases"
+               target="_blank" rel="noopener noreferrer"
+               class="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-neutral-200 text-neutral-700 font-medium hover:bg-neutral-100 transition-colors">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                查看所有 Releases
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 bg-white border-t border-neutral-100">
+        <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2 text-sm text-neutral-400">
+                <div class="w-6 h-6 rounded-md bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold text-xs">CK</div>
+                <span>ClaudeKit &copy; 2026</span>
+            </div>
+            <div class="flex items-center gap-6 text-sm text-neutral-400">
+                <span>基于 Electron + Vue 3 构建</span>
+                <a href="https://github.com/deajax/claudekit" target="_blank" rel="noopener noreferrer" class="hover:text-neutral-600 transition-colors">GitHub</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
