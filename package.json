@@ -41,7 +41,7 @@
     "package": "electron-vite build && electron-builder --config",
     "publish": "electron-vite build && electron-builder --config --publish always",
     "rebuild": "electron-builder install-app-deps",
-    "postinstall": "chmod +x node_modules/node-pty/prebuilds/*/spawn-helper 2>/dev/null; exit 0"
+    "postinstall": "node -e \"if(process.platform!=='win32'){const{execSync}=require('child_process');try{execSync('chmod +x '+require('path').join('node_modules','node-pty','prebuilds','*','spawn-helper'),{shell:true,stdio:'ignore'})}catch(e){}}\""
   },
   "dependencies": {
     "ant-design-vue": "^4.2.6",
