@@ -437,7 +437,7 @@ function writeWithSudo$1(filePath, content) {
     fs.closeSync(fd);
     const cmd = process.platform === "win32" ? `powershell.exe -Command "Move-Item -Force '${tmpPath}' '${filePath}'"` : `mv "${tmpPath}" "${filePath}"`;
     sudo.exec(cmd, {
-      name: "Claude CLI Desktop — 写入 Shell 配置文件",
+      name: "ClaudeKit Shell Config Writer",
       icns: void 0
     }, (error, stdout, stderr) => {
       if (error) {
@@ -544,7 +544,7 @@ function registerEnvIPC() {
         lines.pop();
       }
       lines.push("");
-      lines.push("# === Claude CLI Desktop — 模型商环境变量 ===");
+      lines.push("# === ClaudeKit — 模型商环境变量 ===");
       for (const [key, value] of Object.entries(vars)) {
         if (value) {
           lines.push(isPowershell ? `$env:${key} = "${value}"` : `export ${key}="${value}"`);
@@ -587,7 +587,7 @@ function registerEnvIPC() {
   });
   electron.ipcMain.handle("system:check-update", async (_event, currentVersion) => {
     try {
-      const repo = process.env.GITHUB_REPO || "deajax/claude-cli-desktop";
+      const repo = process.env.GITHUB_REPO || "deajax/claudekit";
       const resp = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
         headers: {
           Accept: "application/vnd.github+json",
@@ -713,7 +713,7 @@ function writeWithSudo(filePath, content) {
     fs.closeSync(fd);
     const cmd = process.platform === "win32" ? `powershell.exe -Command "Move-Item -Force '${tmpPath}' '${filePath}'"` : `mv "${tmpPath}" "${filePath}"`;
     sudo.exec(cmd, {
-      name: "Claude CLI Desktop Config",
+      name: "ClaudeKit Config",
       icns: void 0
     }, (error, stdout, stderr) => {
       if (error) {

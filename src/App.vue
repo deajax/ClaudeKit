@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, nextTick } from 'vue'
+import { h, ref, onMounted, computed, watch, nextTick } from 'vue'
 import { getOs } from '@/lib/utils'
 import { useTerminalStore } from '@/stores/terminal'
 import { useProviderStore } from '@/stores/providers'
@@ -20,6 +20,7 @@ import {
     RiSubtractLine,
     RiFullscreenLine,
     RiCloseFill,
+    RiWalletLine,
 } from '@remixicon/vue'
 
 const os = getOs()
@@ -113,6 +114,9 @@ onMounted(async () => {
             claudeVersion.value = result.version
         }
     } catch { /* ignore */ }
+
+    // 启动时自动查询一次余额
+    tryFetchBalance()
 })
 
 function onAddTab(): void {
@@ -147,18 +151,22 @@ async function onApplyProvider(_envVars: Record<string, string>): Promise<void> 
             console.log('环境变量已写入:', result.path)
         }
     }
+    // 切换模型商后自动刷新余额
+    tryFetchBalance()
 }
 
 const balanceLoading = ref(false)
 const balanceDisplay = ref('')
 
-async function onQueryBalance(): Promise<void> {
+// 余额自动查询限频（30 秒内不重复查询）
+const lastBalanceQuery = ref(0)
+const MIN_BALANCE_INTERVAL = 30_000
+
+/** 核心查询逻辑，不关心 loading/消息 */
+async function doFetchBalance(): Promise<void> {
     const p = providerStore.activeProvider
-    if (!p?.balanceApi || !p?.AUTH_TOKEN) {
-        message.warning('当前模型商未配置余额查询 API')
-        return
-    }
-    balanceLoading.value = true
+    if (!p?.balanceApi || !p?.AUTH_TOKEN) return
+
     balanceDisplay.value = ''
     try {
         const result = await window.electronAPI.invoke<{ success: boolean; data?: unknown; error?: string }>(
@@ -166,6 +174,7 @@ async function onQueryBalance(): Promise<void> {
         )
         if (result.success && result.data) {
             const d = result.data as Record<string, unknown>
+
             if (d?.balance_infos && Array.isArray(d.balance_infos)) {
                 balanceDisplay.value = (d.balance_infos as Array<Record<string, unknown>>)
                     .map(b => `${b.currency ?? ''} ${b.total_balance ?? '-'}`)
@@ -179,15 +188,34 @@ async function onQueryBalance(): Promise<void> {
             } else {
                 balanceDisplay.value = JSON.stringify(d)
             }
-            message.success(`余额: ${balanceDisplay.value}`)
-        } else {
-            message.error(result.error ?? '查询失败')
         }
-    } catch (e) {
-        message.error((e as Error).message)
-    } finally {
-        balanceLoading.value = false
+    } catch { /* 自动查询静默失败 */ }
+}
+
+/** 手动点击查余额 — 跳过限频，显示 loading 和结果消息 */
+async function onQueryBalance(): Promise<void> {
+    const p = providerStore.activeProvider
+    if (!p?.balanceApi || !p?.AUTH_TOKEN) {
+        message.warning('当前模型商未配置余额查询 API')
+        return
     }
+    lastBalanceQuery.value = 0 // 跳过限频
+    balanceLoading.value = true
+    await doFetchBalance()
+    balanceLoading.value = false
+    if (balanceDisplay.value) {
+        message.success(`余额: ${balanceDisplay.value}`)
+    } else {
+        message.error('查询失败')
+    }
+}
+
+/** 自动触发查询 — 受限频保护，静默执行 */
+async function tryFetchBalance(): Promise<void> {
+    const now = Date.now()
+    if (now - lastBalanceQuery.value < MIN_BALANCE_INTERVAL) return
+    lastBalanceQuery.value = now
+    await doFetchBalance()
 }
 
 function handleTabEdit(key: string | number | MouseEvent, action: 'add' | 'remove'): void {
@@ -234,6 +262,8 @@ function handleStartClaude(tabId: string): void {
     } else {
         ref.startClaude?.()
     }
+    // 启动任务后自动刷新余额
+    tryFetchBalance()
 }
 
 function onTerminalExit(_sessionId: string, _tabId: string): void {
@@ -310,12 +340,16 @@ function onRunTask(task: { id: string; name: string; command: string; cwd: strin
 
             <!-- 底部状态栏 -->
             <a-layout-footer
-                class="text-xs! py-2! px-4! bg-white! border-t border-t-neutral-100 dark:bg-neutral-900! dark:border-t-neutral-800! flex items-center justify-between">
-                <span>claude {{ claudeVersion }} v{{ appVersion }}</span>
-                <div class="flex items-center gap-2" v-if="providerStore.activeProvider?.balanceApi" :loading="balanceLoading">
-                    <span class="cursor-pointer" @click="onQueryBalance">查余额</span>
-                    <span>{{ balanceDisplay }}</span>
+                class="text-xs! p-0! bg-white! border-t border-t-neutral-100 dark:bg-neutral-900! dark:border-t-neutral-800! flex items-center justify-between">
+                <div class="flex items-center gap-2 px-4">
+                    <span>Claude {{ claudeVersion }}</span>
+                    <a-button type="text" :icon="h(RiWalletLine)" class="rounded-none! text-xs!" size="small"
+                        v-if="providerStore.activeProvider?.balanceApi" @click="onQueryBalance">
+                        <span v-if="balanceDisplay" v-text="balanceDisplay" />
+                        <span v-else>查余额</span>
+                    </a-button>
                 </div>
+                <div class="px-4"> v{{ appVersion }}</div>
             </a-layout-footer>
         </a-layout>
 
@@ -410,8 +444,8 @@ html.theme-transitioning *,
 html.theme-transitioning *::before,
 html.theme-transitioning *::after {
     transition: background-color 0.3s ease,
-                border-color 0.3s ease,
-                color 0.3s ease,
-                box-shadow 0.3s ease !important;
+        border-color 0.3s ease,
+        color 0.3s ease,
+        box-shadow 0.3s ease !important;
 }
 </style>

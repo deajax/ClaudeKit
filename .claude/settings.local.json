@@ -22,7 +22,8 @@
       "Bash(node -e \"try { const n = require\\('node-pty/build/Release/pty.node'\\); console.log\\('dir:', n.dir\\); } catch\\(e\\) { console.log\\('fallback:', e.message\\); try { process.env.NODE_PATH='/Users/hanbin/项目/ClaudeCli/node_modules/node-pty/prebuilds/darwin-x64'; const n2 = require\\(process.env.NODE_PATH + '/pty.node'\\); console.log\\('prebuild dir:', n2.dir\\); } catch\\(e2\\) { console.log\\(e2.message\\) } }\")",
       "Bash(chmod +x /Users/hanbin/项目/ClaudeCli/node_modules/node-pty/prebuilds/darwin-x64/spawn-helper)",
       "Bash(chmod +x /Users/hanbin/项目/ClaudeCli/node_modules/node-pty/prebuilds/darwin-arm64/spawn-helper)",
-      "Read(//Users/hanbin/项目/OneConfig/src/renderer/views/**)"
+      "Read(//Users/hanbin/项目/OneConfig/src/renderer/views/**)",
+      "Bash(git -C /Users/hanbin/项目/ClaudeCli remote -v)"
     ]
   }
 }

@@ -112,11 +112,11 @@ async function onResetTasks(): Promise<void> {
 }
 
 function onOpenIssues(): void {
-    window.open('https://github.com/deajax/claude-cli-desktop/issues', '_blank')
+    window.open('https://github.com/deajax/claudekit/issues', '_blank')
 }
 
 function onOpenRepo(): void {
-    window.open('https://github.com/deajax/claude-cli-desktop', '_blank')
+    window.open('https://github.com/deajax/claudekit', '_blank')
 }
 </script>
 

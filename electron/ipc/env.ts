@@ -16,7 +16,7 @@ function writeWithSudo(filePath: string, content: string): Promise<void> {
             : `mv "${tmpPath}" "${filePath}"`
 
         sudo.exec(cmd, {
-            name: 'Claude CLI Desktop — 写入 Shell 配置文件',
+            name: 'ClaudeKit Shell Config Writer',
             icns: undefined
         }, (error, stdout, stderr) => {
             if (error) {
@@ -138,7 +138,7 @@ export function registerEnvIPC(): void {
                 lines.pop()
             }
             lines.push('')
-            lines.push('# === Claude CLI Desktop — 模型商环境变量 ===')
+            lines.push('# === ClaudeKit — 模型商环境变量 ===')
             for (const [key, value] of Object.entries(vars)) {
                 if (value) {
                     lines.push(isPowershell
@@ -194,7 +194,7 @@ export function registerEnvIPC(): void {
     // ---- system:check-update ----
     ipcMain.handle('system:check-update', async (_event, currentVersion: string) => {
         try {
-            const repo = process.env.GITHUB_REPO || 'deajax/claude-cli-desktop'
+            const repo = process.env.GITHUB_REPO || 'deajax/claudekit'
             const resp = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
                 headers: {
                     Accept: 'application/vnd.github+json',

@@ -94,6 +94,9 @@ watch(() => props.visible, async (open) => {
 // ---- Windows: 表格模式 ----
 const envRows = ref<{ key: string; value: string; source: 'system' | 'user' }[]>([])
 const editingRow = ref<number | null>(null)
+const inputRefs = ref<any[]>([])
+const sysCount = computed(() => envRows.value.filter(r => r.source === 'system').length)
+const userCount = computed(() => envRows.value.filter(r => r.source === 'user').length)
 
 async function loadEnvTable(): Promise<void> {
     try {
@@ -125,14 +128,26 @@ async function loadEnvTable(): Promise<void> {
 function addRow(): void {
     envRows.value.push({ key: '', value: '', source: 'user' })
     editingRow.value = envRows.value.length - 1
+    nextTick(() => {
+        inputRefs.value[editingRow.value]?.focus?.()
+    })
 }
 
 function removeRow(index: number): void {
+    const row = envRows.value[index]
+    if (row.key || row.value) {
+        if (!confirm(`确定删除变量 "${row.key || '(空)'}" 吗？`)) return
+    }
     envRows.value.splice(index, 1)
     if (editingRow.value === index) editingRow.value = null
 }
 
 async function saveEnvTable(): Promise<void> {
+    const emptyKeys = envRows.value.filter(r => !r.key.trim() && r.source === 'user')
+    if (emptyKeys.length > 0) {
+        alert(`有 ${emptyKeys.length} 个变量名为空，请填写或删除`)
+        return
+    }
     // 只保存用户自定义的变量（包括新增和修改过的）
     const obj: Record<string, string> = {}
     for (const row of envRows.value) {
@@ -140,7 +155,7 @@ async function saveEnvTable(): Promise<void> {
     }
     try {
         await saveEnv(obj)
-        alert('保存成功')
+        alert('保存成功，重启终端后生效')
     } catch (e) {
         alert('保存失败: ' + (e as Error).message)
     }
@@ -169,7 +184,7 @@ onUnmounted(() => {
             </template>
             <template v-if="os === 'win'">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs dark:text-neutral-200">用户环境变量</span>
+                    <span class="text-xs dark:text-neutral-200">系统 {{ sysCount }} 个 · 用户 {{ userCount }} 个</span>
                     <a-space>
                         <a-button @click="addRow">
                             添加变量
@@ -203,7 +218,7 @@ onUnmounted(() => {
                         class="border-t border-neutral-200 dark:border-neutral-700"
                         :class="row.source === 'system' ? 'opacity-70' : ''">
                         <td class="px-2 py-1">
-                            <a-input v-model:value="row.key"
+                            <a-input :ref="(el: any) => { if (el) inputRefs[i] = el }" v-model:value="row.key"
                                 class="bg-transparent border-0 text-neutral-700 dark:text-neutral-200 h-7 text-xs"
                                 placeholder="变量名" :disabled="row.source === 'system'" />
                         </td>

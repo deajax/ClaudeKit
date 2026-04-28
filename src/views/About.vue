@@ -54,7 +54,7 @@ import { RiGithubFill, RiBugFill } from '@remixicon/vue'
 <template>
     <a-modal :open="visible" title="关于" destroy-on-close @cancel="emit('close')">
         <div class="about-panel p-5 space-y-4 text-center">
-            <h3 class="text-base font-medium text-neutral-700 dark:text-neutral-200">Claude CLI Desktop</h3>
+            <h3 class="text-base font-medium text-neutral-700 dark:text-neutral-200">ClaudeKit</h3>
             <p class="text-xs text-neutral-500 dark:text-neutral-400">跨平台桌面管理工具</p>
 
             <div class="bg-gray-100 dark:bg-neutral-700/30 rounded p-3 space-y-2 text-xs">
@@ -82,10 +82,10 @@ import { RiGithubFill, RiBugFill } from '@remixicon/vue'
             </div>
 
             <a-space>
-                <a-button href="https://github.com/deajax/claude-cli-desktop" target="_blank" type="link" :icon="h(RiGithubFill)">
+                <a-button href="https://github.com/deajax/claudekit" target="_blank" type="link" :icon="h(RiGithubFill)">
                     GitHub 仓库
                 </a-button>
-                <a-button href="https://github.com/deajax/claude-cli-desktop/issues" target="_blank" type="link" :icon="h(RiBugFill)">
+                <a-button href="https://github.com/deajax/claudekit/issues" target="_blank" type="link" :icon="h(RiBugFill)">
                     提 Issues
                 </a-button>
             </a-space>

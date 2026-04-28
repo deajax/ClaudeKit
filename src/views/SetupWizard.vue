@@ -259,7 +259,7 @@ onMounted(() => {
         <!-- 标题 & 步骤条 -->
         <div class="mb-8 w-4xl">
             <a-typography-title :level="2" class="text-center mb-8!">
-                欢迎使用 Claude CLI Desktop
+                欢迎使用 ClaudeKit
             </a-typography-title>
             <a-steps :current="currentStep" :items="steps" label-placement="vertical" />
         </div>
