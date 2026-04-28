@@ -363,7 +363,7 @@ function onRunTask(task: { id: string; name: string; command: string; cwd: strin
         </a-layout>
 
         <!-- 任务 Drawer -->
-        <a-drawer v-model:open="showTaskDrawer" title="运行任务" placement="top" height="auto" :styles="{ body: { padding: 0 } }"
+        <a-drawer v-model:open="showTaskDrawer" title="运行任务" placement="top" height="auto" :bodyStyle="{ padding: 0 }"
             destroy-on-close @close="showTaskDrawer = false" rootClassName="task-drawer">
             <TaskDrawer @close="showTaskDrawer = false" @run-task="onRunTask" />
         </a-drawer>

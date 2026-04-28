@@ -436,7 +436,7 @@ onMounted(() => {
                     下一步
                 </a-button>
                 <a-button v-if="currentStep === steps.length - 1" type="primary"
-                    class="bg-green-600 hover:bg-green-500 border-green-600 text-xs" @click="finishWizard">
+                    class="bg-green-600 hover:bg-green-500 border-green-600" size="large" @click="finishWizard">
                     完成
                 </a-button>
             </div>
