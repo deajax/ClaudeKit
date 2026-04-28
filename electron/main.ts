@@ -19,6 +19,7 @@ function createWindow(): void {
         frame: false,
         titleBarStyle: 'hiddenInset',
         trafficLightPosition: { x: 16, y: 16 },
+        icon: join(__dirname, '../../build/icon.png'),
         webPreferences: {
             preload: join(__dirname, '../preload/index.js'),
             sandbox: false,
