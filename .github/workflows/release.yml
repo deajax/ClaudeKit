@@ -123,3 +123,27 @@ jobs:
           files: |
             artifacts/**/*.dmg
             artifacts/**/*Setup*.exe
+
+      - uses: actions/checkout@v5
+        with:
+          ref: gh-pages
+
+      - name: Update gh-pages download links
+        env:
+          V: ${{ inputs.version }}
+        run: |
+          git checkout -B gh-pages origin/gh-pages
+          OLD=$(grep -oP 'releases/download/v\K[^/]+' index.html)
+          [ -z "$OLD" ] && { echo "ERROR: no version found in index.html"; exit 1; }
+          echo "v$OLD → v$V"
+          sed -i "s|releases/download/v$OLD|releases/download/v$V|g" index.html
+          sed -i "s|ClaudeKit-$OLD|ClaudeKit-$V|g" index.html
+          sed -i "s|ClaudeKit.Setup.$OLD|ClaudeKit.Setup.$V|g" index.html
+          sed -i "s|v$OLD ·|v$V ·|g" index.html
+          git add index.html
+          git diff --cached --quiet || {
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore: update download links to v$V"
+            git push origin gh-pages
+          }
