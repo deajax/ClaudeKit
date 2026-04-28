@@ -78,7 +78,7 @@ jobs:
         run: npm run build
 
       - name: Package (macOS Intel)
-        if: matrix.os == 'macos-13'
+        if: matrix.os == 'macos-14'
         run: npx electron-builder --config --publish never --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
