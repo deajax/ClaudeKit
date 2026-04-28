@@ -8,7 +8,7 @@ import { DB_FILES } from '../../shared/types'
 // sessionId → pty instance
 const sessions = new Map<string, IPty>()
 
-const DATA_DIR = join(homedir(), '.ClaudeCLI')
+const DATA_DIR = join(homedir(), '.ClaudeKit')
 
 function getShell(): string {
     if (process.platform === 'win32') {

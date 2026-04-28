@@ -5,7 +5,7 @@ import { homedir } from 'os'
 import { DB_FILES } from '../../shared/types'
 import { BUILTIN_TASKS } from '../../shared/constants'
 
-const DATA_DIR = join(homedir(), '.ClaudeCLI')
+const DATA_DIR = join(homedir(), '.ClaudeKit')
 
 function dataPath(file: string): string {
     return join(DATA_DIR, file)

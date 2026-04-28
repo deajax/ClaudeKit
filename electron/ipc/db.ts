@@ -5,7 +5,7 @@ import { homedir } from 'os'
 import { IPC_CHANNELS, DB_FILES } from '../../shared/types'
 import { BUILTIN_PROVIDERS, BUILTIN_TASKS, DEFAULT_SETTINGS } from '../../shared/constants'
 
-const DATA_DIR = join(homedir(), '.ClaudeCLI')
+const DATA_DIR = join(homedir(), '.ClaudeKit')
 
 function dataPath(file: string): string {
     return join(DATA_DIR, file)

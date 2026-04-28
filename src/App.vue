@@ -64,6 +64,8 @@ const showAbout = ref(false)
 const appVersion = ref('0.1.0')
 const claudeVersion = ref('--')
 
+const claudeNotInstalled = computed(() => !claudeVersion.value || claudeVersion.value === '--' || claudeVersion.value === '未安装')
+
 function applyThemeClass(dark: boolean): void {
     // 添加过渡 class 触发主题切换动画
     document.documentElement.classList.add('theme-transitioning')
@@ -342,7 +344,14 @@ function onRunTask(task: { id: string; name: string; command: string; cwd: strin
             <a-layout-footer
                 class="text-xs! p-0! bg-white! border-t border-t-neutral-100 dark:bg-neutral-900! dark:border-t-neutral-800! flex items-center justify-between">
                 <div class="flex items-center gap-2 px-4">
-                    <span>Claude {{ claudeVersion }}</span>
+                    <span v-if="claudeNotInstalled" class="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                            <span class="inline-block w-2 h-2 rounded-full bg-amber-500" />
+                            Claude 未安装
+                            <a-button type="link" size="small" class="text-xs! px-1!" @click="showWizard = true">
+                                运行安装向导
+                            </a-button>
+                        </span>
+                        <span v-else>Claude {{ claudeVersion }}</span>
                     <a-button type="text" :icon="h(RiWalletLine)" class="rounded-none! text-xs!" size="small"
                         v-if="providerStore.activeProvider?.balanceApi" @click="onQueryBalance">
                         <span v-if="balanceDisplay" v-text="balanceDisplay" />
@@ -361,7 +370,7 @@ function onRunTask(task: { id: string; name: string; command: string; cwd: strin
 
         <!-- 面板 Modals -->
         <ProviderConfig :visible="showProviderConfig" @close="showProviderConfig = false" />
-        <Settings :visible="showSettings" @close="showSettings = false" />
+        <Settings :visible="showSettings" @close="showSettings = false" @reopen-wizard="showSettings = false; showWizard = true" />
         <EnvManager :visible="showEnvManager" @close="showEnvManager = false" />
         <HelpDocs :visible="showHelp" @close="showHelp = false" />
         <About :visible="showAbout" @close="showAbout = false" />

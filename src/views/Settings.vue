@@ -9,6 +9,7 @@ defineProps<{
 
 const emit = defineEmits<{
     close: []
+    reopenWizard: []
 }>()
 
 const settingsStore = useSettingsStore()
@@ -118,10 +119,15 @@ function onOpenIssues(): void {
 function onOpenRepo(): void {
     window.open('https://github.com/deajax/claudekit', '_blank')
 }
+
+function onReopenWizard(): void {
+    settingsStore.updateWizardCompleted(false)
+    emit('reopenWizard')
+}
 </script>
 
 <template>
-    <a-modal :open="visible" title="设置" destroy-on-close @cancel="emit('close')">
+    <a-modal :open="visible" title="设置" destroy-on-close @ok="emit('close')" @cancel="emit('close')">
         <a-form :labelCol="{ span: 5 }" :wrapperCol="{ span: 18 }">
             <!-- 外观设置 -->
             <a-form-item label="暗色模式">
@@ -168,6 +174,16 @@ function onOpenRepo(): void {
                     </a-button>
                     <p class="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
                         在 ~/.claude.json 中设置 hasCompletedOnboarding = true，需授权提权操作
+                    </p>
+                </div>
+            </a-form-item>
+
+            <!-- 重新运行安装向导 -->
+            <a-form-item label="安装向导">
+                <div class="w-full">
+                    <a-button block @click="onReopenWizard">重新运行安装向导</a-button>
+                    <p class="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+                        重新配置 ClaudeKit 路径、API Key 等初始设置
                     </p>
                 </div>
             </a-form-item>

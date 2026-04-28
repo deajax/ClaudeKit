@@ -206,7 +206,7 @@ const DEFAULT_SETTINGS = {
   wizardCompleted: false,
   activeProviderId: ""
 };
-const DATA_DIR$2 = path.join(os.homedir(), ".ClaudeCLI");
+const DATA_DIR$2 = path.join(os.homedir(), ".ClaudeKit");
 function dataPath$2(file) {
   return path.join(DATA_DIR$2, file);
 }
@@ -317,7 +317,7 @@ function registerDbIPC() {
   });
 }
 const sessions = /* @__PURE__ */ new Map();
-path.join(os.homedir(), ".ClaudeCLI");
+path.join(os.homedir(), ".ClaudeKit");
 function getShell() {
   if (process.platform === "win32") {
     return process.env.COMSPEC || "powershell.exe";
@@ -794,7 +794,7 @@ function registerConfigIPC() {
     }
   });
 }
-const DATA_DIR$1 = path.join(os.homedir(), ".ClaudeCLI");
+const DATA_DIR$1 = path.join(os.homedir(), ".ClaudeKit");
 function dataPath$1(file) {
   return path.join(DATA_DIR$1, file);
 }
@@ -864,7 +864,7 @@ function registerProviderIPC() {
     }
   });
 }
-const DATA_DIR = path.join(os.homedir(), ".ClaudeCLI");
+const DATA_DIR = path.join(os.homedir(), ".ClaudeKit");
 function dataPath(file) {
   return path.join(DATA_DIR, file);
 }
@@ -931,6 +931,7 @@ function registerTaskIPC() {
   });
 }
 function createWindow() {
+  const iconPath = is.dev ? path.join(process.cwd(), "build/icon.png") : path.join(__dirname, "../../build/icon.png");
   const mainWindow = new electron.BrowserWindow({
     width: 1200,
     height: 800,
@@ -940,6 +941,7 @@ function createWindow() {
     frame: false,
     titleBarStyle: "hiddenInset",
     trafficLightPosition: { x: 16, y: 16 },
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.js"),
       sandbox: false,
@@ -969,7 +971,11 @@ function registerIpcModules() {
   registerTaskIPC();
 }
 electron.app.whenReady().then(() => {
-  electronApp.setAppUserModelId("com.claudecli.desktop");
+  electronApp.setAppUserModelId("com.claudekit.desktop");
+  if (process.platform === "darwin" && electron.app.dock) {
+    const dockIconPath = is.dev ? path.join(process.cwd(), "build/icon.icns") : path.join(__dirname, "../../build/icon.icns");
+    electron.app.dock.setIcon(dockIconPath);
+  }
   initDataDir();
   electron.app.on("browser-window-created", (_, window) => {
     optimizer.watchWindowShortcuts(window);

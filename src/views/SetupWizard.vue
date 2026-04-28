@@ -253,7 +253,7 @@ onMounted(() => {
     <div class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-neutral-100 dark:bg-neutral-900">
         <!-- 标题 & 步骤条 -->
         <div class="mb-8 w-4xl">
-            <a-typography-title :level="2" class="text-center mb-8!">
+            <a-typography-title :level="2" class="text-center mb-6!">
                 欢迎使用 ClaudeKit
             </a-typography-title>
             <a-steps :current="currentStep" :items="steps" label-placement="vertical" />
@@ -425,14 +425,14 @@ onMounted(() => {
 
         <!-- 导航按钮 -->
         <div class="mt-8 w-xl shrink-0 flex items-center justify-between">
-            <a-button @click="skipWizard">
+            <a-button @click="skipWizard" size="large">
                 跳过
             </a-button>
             <div class="flex gap-2">
-                <a-button v-if="currentStep > 0" @click="prevStep">
+                <a-button v-if="currentStep > 0" @click="prevStep" size="large">
                     上一步
                 </a-button>
-                <a-button v-if="currentStep < steps.length - 1" type="primary" @click="nextStep">
+                <a-button v-if="currentStep < steps.length - 1" type="primary" size="large" @click="nextStep">
                     下一步
                 </a-button>
                 <a-button v-if="currentStep === steps.length - 1" type="primary"

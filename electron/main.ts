@@ -55,9 +55,9 @@ function registerIpcModules(): void {
 }
 
 app.whenReady().then(() => {
-    electronApp.setAppUserModelId('com.claudecli.desktop')
+    electronApp.setAppUserModelId('com.claudekit.desktop')
 
-    // 初始化 ~/.ClaudeCLI/ 数据目录和 JSON 数据库文件
+    // 初始化 ~/.ClaudeKit/ 数据目录和 JSON 数据库文件
     initDataDir()
 
     app.on('browser-window-created', (_, window) => {

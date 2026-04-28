@@ -78,16 +78,19 @@ import { RiGithubFill, RiBugFill } from '@remixicon/vue'
 
             <div v-if="latestVersion" class="text-xs">
                 <p v-if="updateAvailable" class="text-yellow-600 dark:text-yellow-400">
-                    发现新版本 v{{ latestVersion }}，请前往下载
+                    发现新版本 v{{ latestVersion }}，请前往 <a href="https://github.com/deajax/claudekit" target="_blank"
+                        class="text-yellow-600! dark:text-yellow-400! underline!">Github</a> 下载
                 </p>
                 <p v-else class="text-green-600 dark:text-green-400">当前已是最新版本</p>
             </div>
 
             <a-space>
-                <a-button href="https://github.com/deajax/claudekit" target="_blank" type="link" :icon="h(RiGithubFill)">
+                <a-button href="https://github.com/deajax/claudekit" target="_blank" type="link"
+                    :icon="h(RiGithubFill)">
                     GitHub 仓库
                 </a-button>
-                <a-button href="https://github.com/deajax/claudekit/issues" target="_blank" type="link" :icon="h(RiBugFill)">
+                <a-button href="https://github.com/deajax/claudekit/issues" target="_blank" type="link"
+                    :icon="h(RiBugFill)">
                     提 Issues
                 </a-button>
             </a-space>

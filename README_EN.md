@@ -82,13 +82,13 @@ ClaudeKit also supports one-click Claude Code login-free setup (setting `hasComp
 | Terminal Emulator | xterm.js 5.x | Same renderer as VS Code |
 | Terminal Process | node-pty 1.x | Real TTY processes |
 | State Management | Pinia 2.x | Official Vue 3 state library |
-| Data Persistence | JSON files | `~/.ClaudeCLI/` directory |
+| Data Persistence | JSON files | `~/.ClaudeKit/` directory |
 | Privilege Elevation | sudo-prompt 9.x | Cross-platform sudo |
 
 ### Project Structure
 
 ```
-ClaudeCli/
+ClaudeKit/
 ├── electron/                    # Electron main process
 │   ├── main.ts                  # Entry point, window creation
 │   ├── preload.ts               # contextBridge API exposure
@@ -131,7 +131,7 @@ ClaudeCli/
 
 ### Data Persistence
 
-No traditional database is used. All data is stored as JSON files under `~/.ClaudeCLI/`:
+No traditional database is used. All data is stored as JSON files under `~/.ClaudeKit/`:
 
 | File | Purpose |
 |---|---|
@@ -192,7 +192,7 @@ Build output is located in the `out/` directory.
 
 ### Data Directory
 
-User data is stored in `~/.ClaudeCLI/`. Uninstalling the app does not automatically remove this directory. Delete it manually if you want to clean up.
+User data is stored in `~/.ClaudeKit/`. Uninstalling the app does not automatically remove this directory. Delete it manually if you want to clean up.
 
 ## Usage
 

@@ -1,6 +1,6 @@
 import type { Provider, QuickTask, AppSettings } from './types'
 
-export const DATA_DIR = '~/.ClaudeCLI'
+export const DATA_DIR = '~/.ClaudeKit'
 
 export const BUILTIN_PROVIDERS: Omit<Provider, 'AUTH_TOKEN'>[] = [
     {
