@@ -77,7 +77,20 @@ jobs:
       - name: Build frontend + main
         run: npm run build
 
-      - name: Package
+      - name: Package (macOS Intel)
+        if: matrix.os == 'macos-13'
+        run: npx electron-builder --config --publish never --x64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package (macOS ARM)
+        if: matrix.os == 'macos-latest'
+        run: npx electron-builder --config --publish never --arm64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package (Windows)
+        if: matrix.os == 'windows-latest'
         run: npx electron-builder --config --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
