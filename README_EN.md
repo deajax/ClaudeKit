@@ -2,13 +2,30 @@
 
 # ClaudeKit
 
-![](/images/ScreenShot_2026-04-29_080137_521.png)
+> Built-in terminal. Switch and start working — your Claude Code desktop workbench.
 
-A cross-platform desktop management tool for Claude Code CLI, enabling fast switching between model providers and API configurations with built-in terminal integration and environment variable management.
+![](/images/ScreenShot_2026-04-29_080137_521.png)
 
 ## What It Is
 
-ClaudeKit is an Electron-based desktop application that provides graphical management around the [Claude Code CLI](https://github.com/anthropics/claude-code). When you need to switch between multiple model providers like DeepSeek, Alibaba Bailian, OpenRouter, or SiliconFlow, or configure different Claude Code environments for different projects, ClaudeKit brings these operations from the command line into a visual toolbar — one-click switching and injection.
+ClaudeKit is a **desktop workbench for Claude Code**. What sets it apart from standalone switcher tools is the built-in multi-tab terminal — provider switching and Claude Code launching happen in one place, without ever leaving the app.
+
+## How Is It Different?
+
+Most Claude Code switcher tools do one thing: inject environment variables. You pick a provider, they set the env vars, and then you have to open your own terminal and type `claude`.
+
+ClaudeKit goes further: **we don't just switch — we give you a place to work.**
+
+| | Standalone Switchers | ClaudeKit |
+|---|---|---|
+| One-click provider switch | ✅ | ✅ |
+| Built-in terminal, switch & start | ❌ Must switch to external terminal | ✅ Launch Claude right in-app |
+| Multi-tab parallel work | ❌ | ✅ Claude + dev server + tests in parallel |
+| Env variable isolation | ❌ Global, risk of conflicts | ✅ Process-level injection via node-pty |
+| Visual config management | Partial | ✅ Full GUI config panel |
+| Setup wizard | ❌ | ✅ 5-step onboarding, install to launch |
+| Balance check | Partial | ✅ DeepSeek balance in status bar |
+| One-click login-free setup | ❌ | ✅ Auto-configure, skip Claude Code login |
 
 ## How It Works
 
