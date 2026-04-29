@@ -281,7 +281,7 @@ export function registerEnvIPC(): void {
             const version = execSync('claude --version', { encoding: 'utf-8', timeout: 5000 }).trim()
             return { success: true, version }
         } catch {
-            return { success: true, version: '未安装' }
+            return { success: false, version: '未安装' }
         }
     })
 

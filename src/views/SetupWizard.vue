@@ -68,7 +68,15 @@ function closeInstallGuide(): void {
     showGuideModal.value = false
 }
 
+const envChecking = ref(false)
+
 async function runEnvCheck(): Promise<void> {
+    envChecking.value = true
+    for (const item of envItems) {
+        item.checking = true
+        item.available = false
+        item.version = ''
+    }
     shellType.value = os === 'mac' ? 'zsh' : os === 'win' ? 'powershell' : 'bash'
 
     async function checkOne(key: string, channel: string): Promise<{ key: string; success: boolean; version: string }> {
@@ -90,10 +98,11 @@ async function runEnvCheck(): Promise<void> {
         const item = envItems.find(i => i.key === r.key)
         if (item) {
             item.version = r.version ?? ''
-            item.available = r.success
+            item.available = r.success && r.version !== '未安装'
             item.checking = false
         }
     }
+    envChecking.value = false
 }
 
 // ---- Step 2: 安装 Claude Code ----
@@ -217,9 +226,11 @@ async function onSaveProvider(data: Provider, verified: boolean): Promise<void> 
     if (existing) {
         await providerStore2.update(existing.id, data)
         if (verified) verifiedProviders.value.add(data.BASE_URL)
+        await providerStore2.setActive(existing.id)
     } else {
         await providerStore2.add({ id: saveId, ...data })
         if (verified) verifiedProviders.value.add(data.BASE_URL)
+        await providerStore2.setActive(saveId)
     }
     showProviderModal.value = false
     editingProvider.value = null
@@ -269,9 +280,14 @@ onMounted(() => {
                     </a-typography-title>
                     <a-table :dataSource="envItems" :columns="envColumns" :pagination="false" rowKey="key">
                         <template #title>
-                            <div class="flex items-center gap-2 -ml-3">
-                                <RiTerminalBoxLine />
-                                <span>Shell 类型：{{ shellType || '检测中...' }}</span>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <RiTerminalBoxLine />
+                                    <span>Shell 类型：{{ shellType || '检测中...' }}</span>
+                                </div>
+                                <a-button size="small" :loading="envChecking" @click="runEnvCheck">
+                                    重新检测
+                                </a-button>
                             </div>
                         </template>
                         <template #bodyCell="{ column, record }">
