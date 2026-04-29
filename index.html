@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ClaudeKit — 跨平台 Claude Code 桌面伴侣</title>
+    <title>ClaudeKit — 内置终端，切换即开工 | Claude Code 桌面工作台</title>
+    <meta name="description" content="ClaudeKit 是 Claude Code 桌面工作台。内置多标签终端，切换模型商后无需跳出应用，一键启动 Claude 开始工作。支持 macOS 和 Windows。" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -107,21 +108,33 @@
         <div class="hero-glow" style="top: 10%; left: -10%;"></div>
         <div class="hero-glow" style="bottom: 20%; right: -5%; background: radial-gradient(circle, rgba(151,117,250,0.12) 0%, transparent 70%);"></div>
 
-        <div class="max-w-4xl mx-auto px-6 text-center pt-24 pb-16 relative">
-            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-50 text-brand-700 text-sm font-medium mb-8 border border-brand-100">
-                <span class="w-2 h-2 rounded-full bg-green-500"></span>
-                v0.1.1-beta · 跨平台可用
+        <div class="max-w-4xl mx-auto px-6 text-center pt-16 pb-24 relative">
+            <div class="mb-8">
+                <svg width="96" height="96" viewBox="0 0 1024 1024" class="rounded-2xl mx-auto mb-6 shadow-lg">
+                    <defs>
+                        <linearGradient id="logo-hero" x1="512" y1="762.9" x2="512" y2="263.1" gradientUnits="userSpaceOnUse">
+                            <stop offset="0" stop-color="#29abe2"/>
+                            <stop offset="1" stop-color="#1677ff"/>
+                        </linearGradient>
+                    </defs>
+                    <rect fill="#141414" x="0" y="0" width="1024" height="1024" rx="225" ry="225"/>
+                    <path fill="url(#logo-hero)" d="M811.81,461.31v-198.21H212.12v198.25h-99.96v103.3h99.96v100.91h49.54v97.34h50.42v-97.34h49.58v97.34h50.38v-97.34h199.92v97.34h50.42v-97.34h49.54v97.34h50.42v-97.34h49.54v-100.87h99.96v-103.38h-100.03ZM381.27,469.46l-.12-.12-53.35,53.35-41.82-41.82,53.35-53.35-53.35-53.35,41.82-41.82,53.35,53.35.12-.12,41.82,42.06-41.82,41.82ZM737.71,457.09h-134.77v-59.15h134.77v59.15Z"/>
+                </svg>
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-50 text-brand-700 text-sm font-medium border border-brand-100">
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                    v0.1.1-beta · 跨平台可用
+                </div>
             </div>
 
             <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight mb-6">
                 <span class="gradient-text">Claude Code</span>
                 <br />
-                <span class="text-neutral-800">桌面伴侣</span>
+                <span class="text-neutral-800">桌面工作台</span>
             </h1>
 
             <p class="text-lg md:text-xl text-neutral-500 max-w-2xl mx-auto mb-10 leading-relaxed">
-                为 Claude Code CLI 量身打造的桌面管理工具 —— 自由切换模型提供商、
-                管理终端会话、配置环境变量，让 AI 编码体验更流畅。
+                不只是切换工具，更是 Claude Code 桌面工作台。内置多标签终端，切换模型商后一键启动 Claude，
+                不用跳出应用。Claude、dev server、测试 —— 一个窗口全搞定。
             </p>
 
             <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -140,8 +153,8 @@
             <!-- Feature Pills -->
             <div class="flex flex-wrap justify-center gap-3 mt-12">
                 <span class="px-4 py-2 rounded-lg bg-neutral-100 text-neutral-600 text-sm font-medium">macOS + Windows</span>
+                <span class="px-4 py-2 rounded-lg bg-neutral-100 text-neutral-600 text-sm font-medium">内置终端，切换即开工</span>
                 <span class="px-4 py-2 rounded-lg bg-neutral-100 text-neutral-600 text-sm font-medium">多模型商切换</span>
-                <span class="px-4 py-2 rounded-lg bg-neutral-100 text-neutral-600 text-sm font-medium">内置终端</span>
                 <span class="px-4 py-2 rounded-lg bg-neutral-100 text-neutral-600 text-sm font-medium">环境变量管理</span>
                 <span class="px-4 py-2 rounded-lg bg-neutral-100 text-neutral-600 text-sm font-medium">任务自动化</span>
             </div>
@@ -153,26 +166,26 @@
         <div class="max-w-6xl mx-auto px-6">
             <div class="text-center mb-16">
                 <h2 class="text-3xl md:text-4xl font-bold text-neutral-800 mb-4">核心功能</h2>
-                <p class="text-neutral-500 max-w-xl mx-auto">围绕 Claude Code CLI 的工作流，提供一系列提升效率的工具。</p>
+                <p class="text-neutral-500 max-w-xl mx-auto">切换、编码、调试、运行 —— 一个窗口，端到端的 Claude Code 工作体验。</p>
             </div>
 
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Feature 1 -->
-                <div class="feature-card rounded-2xl bg-white p-8 border border-neutral-100">
-                    <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-neutral-800 mb-2">模型提供商切换</h3>
-                    <p class="text-sm text-neutral-500 leading-relaxed">内置 DeepSeek、OpenAI 等主流模型商配置模板，一键切换，自动注入 API 密钥与环境变量。</p>
-                </div>
-
-                <!-- Feature 2 -->
+                <!-- Feature 1: Terminal First — Core Differentiator -->
                 <div class="feature-card rounded-2xl bg-white p-8 border border-neutral-100">
                     <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                     </div>
-                    <h3 class="text-lg font-semibold text-neutral-800 mb-2">终端集成</h3>
-                    <p class="text-sm text-neutral-500 leading-relaxed">基于 xterm.js 的全功能嵌入式终端，标签页管理、自动适配主题、支持多会话并行。附带一键启动 Claude Code。</p>
+                    <h3 class="text-lg font-semibold text-neutral-800 mb-2">内置终端，切换即开工</h3>
+                    <p class="text-sm text-neutral-500 leading-relaxed">不用跳出应用。多标签终端内一键启动 Claude Code，切换模型商后即时生效。一边聊 Claude，一边跑 dev server，一个窗口搞定全部工作流。</p>
+                </div>
+
+                <!-- Feature 2: Provider Switching -->
+                <div class="feature-card rounded-2xl bg-white p-8 border border-neutral-100">
+                    <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-neutral-800 mb-2">多模型商一键切换</h3>
+                    <p class="text-sm text-neutral-500 leading-relaxed">内置 DeepSeek、阿里云百炼、OpenRouter、硅基流动等主流模型商配置，下拉选择、一键应用，API 密钥与环境变量自动注入。</p>
                 </div>
 
                 <!-- Feature 3 -->
@@ -190,7 +203,7 @@
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
                     </div>
                     <h3 class="text-lg font-semibold text-neutral-800 mb-2">任务管理</h3>
-                    <p class="text-sm text-neutral-500 leading-relaxed">预设常用命令与参数模板，一键发送到终端执行。减少重复输入，专注编码本身。</p>
+                    <p class="text-sm text-neutral-500 leading-relaxed">预设常用命令与参数模板，一键发送到终端标签页执行。npm dev、build、test 随时跑，减少重复输入，专注编码本身。</p>
                 </div>
 
                 <!-- Feature 5 -->
