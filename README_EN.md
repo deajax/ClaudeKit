@@ -2,6 +2,8 @@
 
 # ClaudeKit
 
+![](/images/ScreenShot_2026-04-29_080137_521.png)
+
 A cross-platform desktop management tool for Claude Code CLI, enabling fast switching between model providers and API configurations with built-in terminal integration and environment variable management.
 
 ## What It Is
