@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.3-beta (2026-04-30)
+
+- **新增**：Windows 环境 Git 检测与安装引导
+- **新增**：打开项目功能，支持直接指定工作目录
+- **新增**：终端重启按钮，支持一键重置终端会话
+- **优化**：多项 Bug 修复与稳定性改进
+
 ## v0.1.2-beta (2026-04-30)
 
 - fix: extract only first match for gh-pages version update — 修复 Release 工作流中 `grep -oP` 匹配多行导致 sed 报错的问题
