@@ -6,3 +6,4 @@ tsconfig.node.tsbuildinfo
 /out
 /out/renderer
 /.claude/worktrees
+/.workflow

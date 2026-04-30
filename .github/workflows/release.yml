@@ -107,6 +107,16 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.tag.outputs.tag }}
+
+      - name: Extract changelog entry
+        run: |
+          awk '/^## v/{if(i)exit;i=1;next}i' CHANGELOG.md | sed '/^$/d' > release_body.md
+          echo "body_file=release_body.md" >> "$GITHUB_OUTPUT"
+        id: changelog
+
       - name: Download all artifacts
         uses: actions/download-artifact@v5
         with:
@@ -117,7 +127,7 @@ jobs:
         with:
           tag_name: ${{ needs.tag.outputs.tag }}
           name: ClaudeKit ${{ needs.tag.outputs.tag }}
-          generate_release_notes: true
+          body_path: ${{ steps.changelog.outputs.body_file }}
           files: |
             artifacts/**/*.dmg
             artifacts/**/*Setup*.exe
