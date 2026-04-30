@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+declare const __APP_VERSION__: string
+
 declare module '*.vue' {
     import type { DefineComponent } from 'vue'
     const component: DefineComponent<object, object, unknown>
@@ -26,6 +28,7 @@ type AllowedChannel =
     | 'config:read'
     | 'config:write'
     | 'config:read-help'
+    | 'dialog:open-folder'
     | 'provider:list'
     | 'provider:create'
     | 'provider:update'
@@ -44,6 +47,7 @@ type AllowedChannel =
     | 'system:check-update'
     | 'system:balance-query'
     | 'system:check-git'
+    | 'system:config-git-env'
     | 'system:test-provider'
     | 'window:minimize'
     | 'window:maximize'

@@ -21,6 +21,7 @@ import {
     RiFullscreenLine,
     RiCloseFill,
     RiWalletLine,
+    RiRefreshLine,
 } from '@remixicon/vue'
 
 const os = getOs()
@@ -61,7 +62,7 @@ const showHelp = ref(false)
 const showAbout = ref(false)
 
 // App version
-const appVersion = ref('0.1.0')
+const appVersion = ref(__APP_VERSION__)
 const claudeVersion = ref('--')
 
 const claudeNotInstalled = computed(() => !claudeVersion.value || claudeVersion.value === '--' || claudeVersion.value === '未安装')
@@ -282,6 +283,21 @@ function winMinimize(): void { window.electronAPI?.invoke('window:minimize') }
 function winMaximize(): void { window.electronAPI?.invoke('window:maximize') }
 function winClose(): void { window.electronAPI?.invoke('window:close') }
 
+function onOpenProject(cwd: string): void {
+    const tabId = activeTabId.value || ''
+    const ref = terminalRefs.value[tabId]
+    if (!ref) return
+
+    if (ref.claudeRunning) {
+        // Claude 运行中：重启终端到目标目录，终端就绪后自动启动 Claude
+        pendingClaudeStart.add(tabId)
+        ref.stopClaude?.(cwd)
+    } else {
+        // Claude 未运行：cd 到目标目录，下次启动 Claude 时自动在该目录下运行
+        ref.sendText?.(`cd "${cwd}"`)
+    }
+}
+
 function onRunTask(task: { id: string; name: string; command: string; cwd: string; providerId: string }): void {
     showTaskDrawer.value = false
     const envVars = providerStore.activeProviderId
@@ -310,7 +326,7 @@ function onRunTask(task: { id: string; name: string; command: string; cwd: strin
             <a-layout-header class="drag-region h-auto! flex bg-transparent! leading-normal! px-0!"
                 :class="os === 'mac' ? 'pl-20!' : ''">
                 <a-tabs v-model:activeKey="activeTabId" type="editable-card" @edit="handleTabEdit"
-                    class="tab-bar-theme nodrag-region pt-2! px-2! flex-initial overflow-hidden">
+                    class="tab-bar-theme nodrag-region pt-2! px-2! flex-initial overflow-hidden ">
                     <a-tab-pane v-for="tab in tabs" :key="tab.id" :tab="tab.title" :closable="tabs.length > 1" />
                 </a-tabs>
 
@@ -333,7 +349,8 @@ function onRunTask(task: { id: string; name: string; command: string; cwd: strin
                 <Toolbar :claude-running="terminalRefs[activeTabId ?? '']?.claudeRunning ?? false"
                     @apply-provider="onApplyProvider" @open-task-drawer="showTaskDrawer = !showTaskDrawer"
                     @open-menu="onOpenDrawer" @start-claude="handleStartClaude(activeTabId ?? '')"
-                    @stop-claude="terminalRefs[activeTabId ?? '']?.stopClaude?.()" />
+                    @stop-claude="terminalRefs[activeTabId ?? '']?.stopClaude?.()"
+                    @open-project="onOpenProject" />
             </div>
 
             <!-- 终端主体 -->
@@ -363,7 +380,13 @@ function onRunTask(task: { id: string; name: string; command: string; cwd: strin
                         <span v-else>查余额</span>
                     </a-button>
                 </div>
-                <div class="px-4"> v{{ appVersion }}</div>
+                <div class="px-4 flex items-center gap-2">
+                    <a-button type="text" :icon="h(RiRefreshLine)" class="rounded-none! text-xs!" size="small"
+                        @click="terminalRefs[activeTabId ?? '']?.stopClaude?.()">
+                        重启终端
+                    </a-button>
+                    <span> v{{ appVersion }}</span>
+                </div>
             </a-layout-footer>
         </a-layout>
 
@@ -407,9 +430,13 @@ body {
 
         .ant-tabs-tab,
         .ant-tabs-nav-add {
-            border: 0;
+            border: none;
 
         }
+    }
+
+     >.ant-tabs-nav::before {
+        border: none;
     }
 }
 

@@ -160,9 +160,10 @@ export function registerEnvIPC(): void {
                 content = readFileSync(targetPath, 'utf-8')
             }
 
-            // 去掉已有的 ANTHROPIC_ 相关 export / $env 行
+            // 去掉已有的 ClaudeKit 标记注释和 ANTHROPIC_ export 行
             const lines = content.split('\n').filter(line => {
                 const trimmed = line.trim()
+                if (trimmed === '# === ClaudeKit — 模型商环境变量 ===') return false
                 if (isPowershell) {
                     return !/^\$env:ANTHROPIC_\w+\s*=/.test(trimmed)
                 }
@@ -391,13 +392,39 @@ export function registerEnvIPC(): void {
     ipcMain.handle('system:check-git', async () => {
         try {
             const { execSync } = await import('child_process')
+            const { existsSync } = await import('fs')
             const shellPath = await getShellPath()
-            const version = execSync('git --version', {
+            const env = { ...process.env, PATH: shellPath }
+
+            // 检测 git
+            const gitVersion = execSync('git --version', {
                 encoding: 'utf-8',
                 timeout: 5000,
-                env: { ...process.env, PATH: shellPath }
+                env
             }).trim()
-            return { success: true, version }
+
+            // Windows 额外检测 bash 是否可用（Git for Windows 提供）
+            if (process.platform === 'win32') {
+                // 优先检查 CLAUDE_CODE_GIT_BASH_PATH 环境变量
+                const claudeBashPath = process.env.CLAUDE_CODE_GIT_BASH_PATH
+                if (claudeBashPath && existsSync(claudeBashPath)) {
+                    return { success: true, version: gitVersion }
+                }
+
+                // 检查 bash 是否在 PATH 中可用
+                try {
+                    execSync('bash --version', {
+                        encoding: 'utf-8',
+                        timeout: 5000,
+                        env,
+                        windowsHide: true
+                    })
+                } catch {
+                    return { success: false, version: `${gitVersion}（bash 不可用）` }
+                }
+            }
+
+            return { success: true, version: gitVersion }
         } catch {
             return { success: false, version: '未安装' }
         }
@@ -462,6 +489,68 @@ export function registerEnvIPC(): void {
                 return { success: false, error: '认证失败（401/403），请检查 AUTH_TOKEN' }
             }
             return { success: false, error: `服务器返回 ${resp.status}，请检查 BASE_URL 和网络连接` }
+        } catch (e) {
+            return { success: false, error: (e as Error).message }
+        }
+    })
+
+    // ---- system:config-git-env — Windows 一键配置 Git bash 环境变量 ----
+    ipcMain.handle('system:config-git-env', async () => {
+        if (process.platform !== 'win32') {
+            return { success: false, error: '仅 Windows 支持' }
+        }
+        try {
+            const { execSync } = await import('child_process')
+            const { existsSync } = await import('fs')
+            const { join, dirname } = await import('path')
+
+            // 通过 where git 查找 git.exe 实际路径，推断 bash.exe 位置
+            let bashPath: string | null = null
+            try {
+                const gitPath = execSync('where git', {
+                    encoding: 'utf-8', timeout: 5000, windowsHide: true
+                }).trim().split(/\r?\n/)[0]
+
+                if (gitPath) {
+                    // git.exe 可能位于 Git/cmd/git.exe 或 Git/bin/git.exe
+                    // bash.exe 通常位于 Git/bin/bash.exe
+                    const gitDir = dirname(gitPath)
+                    const parentDir = dirname(gitDir) // Git 安装根目录
+
+                    const candidates = [
+                        join(gitDir, 'bash.exe'),                     // Git/bin/bash.exe
+                        join(parentDir, 'bin', 'bash.exe'),           // Git/bin/bash.exe
+                        join(parentDir, 'usr', 'bin', 'bash.exe'),    // Git/usr/bin/bash.exe
+                    ]
+                    for (const p of candidates) {
+                        if (existsSync(p)) { bashPath = p; break }
+                    }
+                }
+            } catch { /* where git 失败，走下面常见路径兜底 */ }
+
+            // 兜底：常见安装路径
+            if (!bashPath) {
+                const commonPaths = [
+                    'C:\\Program Files\\Git\\bin\\bash.exe',
+                    'C:\\Program Files (x86)\\Git\\bin\\bash.exe',
+                    join(process.env.LOCALAPPDATA || 'C:\\Users\\Default', 'Programs\\Git\\bin\\bash.exe'),
+                ]
+                for (const p of commonPaths) {
+                    if (existsSync(p)) { bashPath = p; break }
+                }
+            }
+
+            if (!bashPath) {
+                return { success: false, error: '未找到 bash.exe，请确认已安装 Git for Windows' }
+            }
+
+            // 写入用户环境变量
+            execSync(
+                `reg add "HKCU\\Environment" /v CLAUDE_CODE_GIT_BASH_PATH /t REG_SZ /d "${bashPath}" /f`,
+                { encoding: 'utf-8', timeout: 5000, windowsHide: true }
+            )
+
+            return { success: true, bashPath }
         } catch (e) {
             return { success: false, error: (e as Error).message }
         }

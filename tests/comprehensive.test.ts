@@ -164,19 +164,12 @@ describe('IPC Handlers — system:check-* handler 逻辑验证', () => {
         const fs = await import('fs')
         const source = fs.readFileSync('electron/ipc/env.ts', 'utf-8')
 
-        // 提取 system:check-claude 的 catch 块
-        const checkClaudeSection = source.match(
-            /ipcMain\.handle\('system:check-claude'.*?\n\s*\}\)/s
+        // 直接用正规则匹配到 catch 块内的 return（避免 non-greedy 被 try 块的 } 截断）
+        const match = source.match(
+            /ipcMain\.handle\('system:check-claude'[\s\S]*?catch\s*\{[\s\S]*?return\s*\{\s*success:\s*(true|false)/
         )
-        expect(checkClaudeSection).toBeTruthy()
-
-        const section = checkClaudeSection![0]
-
-        // 🔥 核心验证：catch 块必须返回 success: false
-        // 检查 catch 块内容
-        const catchBlock = section.match(/catch\s*\{[\s\S]*?return\s*\{\s*success:\s*(true|false)/)
-        expect(catchBlock).toBeTruthy()
-        expect(catchBlock![1]).toBe('false')
+        expect(match, 'system:check-claude 的 catch 块应返回 success: false').toBeTruthy()
+        expect(match![1], 'catch 块/异常路径的 success 值应为 false').toBe('false')
     })
 
     it('【源码验证】其他 check handler 在异常时也返回 success: false', async () => {

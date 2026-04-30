@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { ipcMain, dialog, BrowserWindow } from 'electron'
 import { existsSync, readFileSync, writeFileSync, writeSync, openSync, closeSync } from 'fs'
 import { join } from 'path'
 import { homedir } from 'os'
@@ -90,6 +90,27 @@ export function registerConfigIPC(): void {
             }
             const content = readFileSync(helpPath, 'utf-8')
             return { success: true, data: content }
+        } catch (e) {
+            return { success: false, error: (e as Error).message }
+        }
+    })
+
+    // ---- dialog:open-folder — 打开文件夹选择对话框 ----
+    ipcMain.handle('dialog:open-folder', async () => {
+        console.log('[dialog:open-folder] handler called')
+        try {
+            const win = BrowserWindow.getFocusedWindow()
+            if (!win) return { success: false, error: '无可用窗口' }
+
+            const result = await dialog.showOpenDialog(win, {
+                properties: ['openDirectory']
+            })
+
+            if (result.canceled || result.filePaths.length === 0) {
+                return { success: false, error: '已取消' }
+            }
+
+            return { success: true, path: result.filePaths[0] }
         } catch (e) {
             return { success: false, error: (e as Error).message }
         }

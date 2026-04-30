@@ -12,6 +12,7 @@ import {
     RiMoonLine,
     RiCheckboxCircleLine,
     RiAddLine,
+    RiGitBranchLine,
 } from '@remixicon/vue'
 import { CheckCircleFilled } from '@ant-design/icons-vue'
 
@@ -44,9 +45,28 @@ interface EnvCheckItem {
     icon: object
 }
 
+const gitGuideContent = h('div', { class: 'space-y-3' }, [
+    h('p', null, ['Git for Windows 提供 bash 环境，是 Claude Code 在 Windows 上运行的必要条件。']),
+    h('div', { class: 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-3 text-sm' }, [
+        h('p', { class: 'font-semibold' }, '操作流程：'),
+        h('ol', { class: 'list-decimal ml-4 mt-1 space-y-1' }, [
+            h('li', null, '点击下方链接下载安装包'),
+            h('li', null, '运行安装程序，保持默认选项（务必勾选 "Add to PATH"）'),
+            h('li', null, '安装完成后关闭本弹窗'),
+            h('li', null, '点击页面上方的「重新检测」按钮，等待自动检测结果'),
+        ]),
+    ]),
+    h('p', { class: 'font-semibold mt-2' }, '下载地址'),
+    h('p', null, [h('a', { href: 'https://git-scm.com/downloads/win', target: '_blank' }, 'https://git-scm.com/downloads/win')]),
+    h('p', { class: 'text-amber-600 dark:text-amber-400 mt-2 text-sm' }, '提示：下载安装完成后关闭此窗口，然后点击「重新检测」让系统自动识别。'),
+])
+
 const envItems = reactive<EnvCheckItem[]>([
     { name: 'Node.js', key: 'node', version: '', available: false, checking: true, installGuide: h('p', null, ['请访问 ', h('a', { href: 'https://nodejs.org', target: '_blank' }, 'https://nodejs.org'), ' 下载安装 LTS 版本']), icon: RiNodejsLine },
-    { name: 'npm', key: 'npm', version: '', available: false, checking: true, installGuide: '安装 Node.js 后自动包含 npm，无需单独安装', icon: RiNpmjsLine },
+    ...(os === 'win'
+        ? [{ name: 'Git for Windows', key: 'git', version: '', available: false, checking: true, installGuide: gitGuideContent, icon: RiGitBranchLine }]
+        : [{ name: 'npm', key: 'npm', version: '', available: false, checking: true, installGuide: '安装 Node.js 后自动包含 npm，无需单独安装', icon: RiNpmjsLine }]
+    ),
     { name: 'Claude Code', key: 'claude', version: '', available: false, checking: true, installGuide: h('div', { class: 'paragraph-code' }, [h(TypographyParagraph, { copyable: { text: 'npm install -g @anthropic-ai/claude-code' } }, { default: () => h('pre', 'npm install -g @anthropic-ai/claude-code') }), h('p', { class: 'mt-2' }, '确保 Node.js 已安装后，在终端中执行以上命令。')]), icon: RiClaudeLine }
 ])
 const envColumns = [
@@ -69,6 +89,27 @@ function closeInstallGuide(): void {
 }
 
 const envChecking = ref(false)
+const configGitLoading = ref(false)
+const showGitErrorModal = ref(false)
+const gitErrorMessage = ref('')
+
+async function configGitEnv(): Promise<void> {
+    configGitLoading.value = true
+    try {
+        const result = await window.electronAPI.invoke<{ success: boolean; bashPath?: string; error?: string }>('system:config-git-env')
+        if (result.success) {
+            // 配置成功，自动重新检测
+            await runEnvCheck()
+        } else {
+            gitErrorMessage.value = result.error ?? '未知错误'
+            showGitErrorModal.value = true
+        }
+    } catch (e) {
+        gitErrorMessage.value = (e as Error).message
+        showGitErrorModal.value = true
+    }
+    configGitLoading.value = false
+}
 
 async function runEnvCheck(): Promise<void> {
     envChecking.value = true
@@ -90,7 +131,10 @@ async function runEnvCheck(): Promise<void> {
 
     const results = await Promise.all([
         checkOne('node', 'system:check-node'),
-        checkOne('npm', 'system:check-npm'),
+        ...(os === 'win'
+            ? [checkOne('git', 'system:check-git')]
+            : [checkOne('npm', 'system:check-npm')]
+        ),
         checkOne('claude', 'system:check-claude')
     ])
 
@@ -253,6 +297,10 @@ function finishWizard(): void {
     emit('complete')
 }
 
+function openUrl(url: string): void {
+    window.open(url, '_blank')
+}
+
 onMounted(() => {
     runEnvCheck()
     checkClaudeInstall()
@@ -305,9 +353,16 @@ onMounted(() => {
                                     <span class="">{{ record.version }}</span>
                                 </template>
                                 <template v-else>
-                                    <a-button @click="showInstallGuide(record)">
-                                        安装
-                                    </a-button>
+                                    <template v-if="record.key === 'git' && record.version.includes('bash')">
+                                        <a-button :loading="configGitLoading" @click="configGitEnv">
+                                            一键配置
+                                        </a-button>
+                                    </template>
+                                    <template v-else>
+                                        <a-button @click="showInstallGuide(record)">
+                                            安装
+                                        </a-button>
+                                    </template>
                                 </template>
                             </template>
                             <template v-else-if="column.key === 'status'">
@@ -321,7 +376,10 @@ onMounted(() => {
                                     </span>
                                 </template>
                                 <template v-else>
-                                    <span class="text-red-500">不可用</span>
+                                    <span v-if="record.key === 'git' && record.version.includes('bash')" class="text-amber-500">
+                                        bash 不可用
+                                    </span>
+                                    <span v-else class="text-red-500">不可用</span>
                                 </template>
                             </template>
                         </template>
@@ -470,6 +528,38 @@ onMounted(() => {
             <template #footer>
                 <a-button type="primary" @click="closeInstallGuide">关闭</a-button>
             </template>
+        </a-modal>
+
+        <!-- Git 环境变量配置失败弹窗 -->
+        <a-modal v-model:open="showGitErrorModal" title="环境变量配置失败" centered :footer="null">
+            <div class="space-y-3">
+                <a-alert message="自动配置未成功" :description="gitErrorMessage" type="error" show-icon />
+
+                <div class="bg-neutral-50 dark:bg-neutral-800 rounded p-3 text-sm">
+                    <p class="font-semibold mb-2">可能的原因：</p>
+                    <ul class="list-disc ml-4 space-y-1">
+                        <li>Git for Windows 未正确安装或安装路径不标准</li>
+                        <li>系统权限不足，无法写入环境变量</li>
+                        <li>杀毒软件或安全策略阻止了注册表修改</li>
+                    </ul>
+                </div>
+
+                <div class="bg-amber-50 dark:bg-amber-900/20 rounded p-3 text-sm border border-amber-200 dark:border-amber-800">
+                    <p class="font-semibold mb-1">💡 需要进一步排查？</p>
+                    <p class="text-neutral-600 dark:text-neutral-300">
+                        请将上面的错误信息复制，前往以下平台搜索或咨询解决方案：
+                    </p>
+                    <div class="flex flex-wrap gap-2 mt-2">
+                        <a-tag color="blue" class="cursor-pointer!" @click="openUrl('https://www.baidu.com/s?wd=' + encodeURIComponent(gitErrorMessage + ' Git for Windows 环境变量'))">百度</a-tag>
+                        <a-tag color="blue" class="cursor-pointer!" @click="openUrl('https://www.google.com/search?q=' + encodeURIComponent(gitErrorMessage + ' Git for Windows environment variable'))">Google</a-tag>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 mt-2">
+                    <a-button @click="showGitErrorModal = false">关闭</a-button>
+                    <a-button type="primary" @click="showGitErrorModal = false; runEnvCheck()">重新检测</a-button>
+                </div>
+            </div>
         </a-modal>
 
         <!-- 模型商配置弹窗 -->

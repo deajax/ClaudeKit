@@ -11,7 +11,8 @@ import {
     RiTerminalBoxLine,
     RiSettingsLine,
     RiLightbulbLine,
-    RiInformationLine
+    RiInformationLine,
+    RiFolderOpenLine,
 } from '@remixicon/vue'
 
 const props = withDefaults(defineProps<{
@@ -26,6 +27,7 @@ const emit = defineEmits<{
     openMenu: [menu: string]
     startClaude: []
     stopClaude: []
+    openProject: [cwd: string]
 }>()
 
 const providerStore = useProviderStore()
@@ -51,6 +53,18 @@ function onApply(): void {
     providerStore.setActive(selectedProviderId.value)
     const envVars = providerStore.getEnvVars(selectedProviderId.value)
     emit('applyProvider', envVars)
+}
+
+async function onOpenProject(): Promise<void> {
+    try {
+        const result = await window.electronAPI.invoke<{ success: boolean; path?: string; error?: string }>('dialog:open-folder')
+        console.log('[openProject] dialog result:', result)
+        if (result.success && result.path) {
+            emit('openProject', result.path)
+        }
+    } catch (e) {
+        console.error('[openProject] error:', e)
+    }
 }
 
 onMounted(async () => {
@@ -99,11 +113,16 @@ onMounted(async () => {
 
         <a-space class="ml-auto">
             <!-- Claude 控制按钮 -->
-            <a-button :icon="h(RiPlayFill)" :type="claudeRunning ? 'text' : 'primary'" :disabled="claudeRunning"
+            <a-button :icon="h(RiPlayFill)" :type="claudeRunning ? 'default' : 'primary'" :disabled="claudeRunning"
                 @click="emit('startClaude')">
                 运行 Claude
             </a-button>
             <a-button v-if="claudeRunning" :icon="h(RiStopFill)" danger @click="emit('stopClaude')" />
+            <a-divider type="vertical"></a-divider>
+            <!-- 打开项目 -->
+            <a-button :icon="h(RiFolderOpenLine)" class="h-7 text-xs" @click="onOpenProject">
+                打开项目
+            </a-button>
             <!-- 运行任务按钮 -->
             <a-button class="h-7 text-xs" @click="emit('openTaskDrawer')">
                 运行任务

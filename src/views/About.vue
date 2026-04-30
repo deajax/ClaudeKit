@@ -9,7 +9,7 @@ const emit = defineEmits<{
     close: []
 }>()
 
-const appVersion = ref('0.1.0')
+const appVersion = ref(__APP_VERSION__)
 const claudeVersion = ref('--')
 const latestVersion = ref('')
 const updateAvailable = ref(false)

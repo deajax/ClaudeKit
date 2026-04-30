@@ -24,6 +24,7 @@ const ALLOWED_CHANNELS = [
   "config:read",
   "config:write",
   "config:read-help",
+  "dialog:open-folder",
   // 模型商操作（Phase 2）
   "provider:list",
   "provider:create",
@@ -47,6 +48,7 @@ const ALLOWED_CHANNELS = [
   "system:check-npm",
   "system:check-git",
   "system:install-claude",
+  "system:config-git-env",
   "system:check-update",
   "system:balance-query",
   "system:test-provider"

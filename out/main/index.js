@@ -759,13 +759,31 @@ function registerEnvIPC() {
   electron.ipcMain.handle("system:check-git", async () => {
     try {
       const { execSync } = await import("child_process");
+      const { existsSync: existsSync2 } = await import("fs");
       const shellPath = await getShellPath();
-      const version = execSync("git --version", {
+      const env = { ...process.env, PATH: shellPath };
+      const gitVersion = execSync("git --version", {
         encoding: "utf-8",
         timeout: 5e3,
-        env: { ...process.env, PATH: shellPath }
+        env
       }).trim();
-      return { success: true, version };
+      if (process.platform === "win32") {
+        const claudeBashPath = process.env.CLAUDE_CODE_GIT_BASH_PATH;
+        if (claudeBashPath && existsSync2(claudeBashPath)) {
+          return { success: true, version: gitVersion };
+        }
+        try {
+          execSync("bash --version", {
+            encoding: "utf-8",
+            timeout: 5e3,
+            env,
+            windowsHide: true
+          });
+        } catch {
+          return { success: false, version: `${gitVersion}（bash 不可用）` };
+        }
+      }
+      return { success: true, version: gitVersion };
     } catch {
       return { success: false, version: "未安装" };
     }
@@ -823,6 +841,66 @@ function registerEnvIPC() {
         return { success: false, error: "认证失败（401/403），请检查 AUTH_TOKEN" };
       }
       return { success: false, error: `服务器返回 ${resp.status}，请检查 BASE_URL 和网络连接` };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  });
+  electron.ipcMain.handle("system:config-git-env", async () => {
+    if (process.platform !== "win32") {
+      return { success: false, error: "仅 Windows 支持" };
+    }
+    try {
+      const { execSync } = await import("child_process");
+      const { existsSync: existsSync2 } = await import("fs");
+      const { join: join2, dirname } = await import("path");
+      let bashPath = null;
+      try {
+        const gitPath = execSync("where git", {
+          encoding: "utf-8",
+          timeout: 5e3,
+          windowsHide: true
+        }).trim().split(/\r?\n/)[0];
+        if (gitPath) {
+          const gitDir = dirname(gitPath);
+          const parentDir = dirname(gitDir);
+          const candidates = [
+            join2(gitDir, "bash.exe"),
+            // Git/bin/bash.exe
+            join2(parentDir, "bin", "bash.exe"),
+            // Git/bin/bash.exe
+            join2(parentDir, "usr", "bin", "bash.exe")
+            // Git/usr/bin/bash.exe
+          ];
+          for (const p of candidates) {
+            if (existsSync2(p)) {
+              bashPath = p;
+              break;
+            }
+          }
+        }
+      } catch {
+      }
+      if (!bashPath) {
+        const commonPaths = [
+          "C:\\Program Files\\Git\\bin\\bash.exe",
+          "C:\\Program Files (x86)\\Git\\bin\\bash.exe",
+          join2(process.env.LOCALAPPDATA || "C:\\Users\\Default", "Programs\\Git\\bin\\bash.exe")
+        ];
+        for (const p of commonPaths) {
+          if (existsSync2(p)) {
+            bashPath = p;
+            break;
+          }
+        }
+      }
+      if (!bashPath) {
+        return { success: false, error: "未找到 bash.exe，请确认已安装 Git for Windows" };
+      }
+      execSync(
+        `reg add "HKCU\\Environment" /v CLAUDE_CODE_GIT_BASH_PATH /t REG_SZ /d "${bashPath}" /f`,
+        { encoding: "utf-8", timeout: 5e3, windowsHide: true }
+      );
+      return { success: true, bashPath };
     } catch (e) {
       return { success: false, error: e.message };
     }
@@ -909,6 +987,22 @@ function registerConfigIPC() {
       }
       const content = fs.readFileSync(helpPath, "utf-8");
       return { success: true, data: content };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  });
+  electron.ipcMain.handle("dialog:open-folder", async () => {
+    console.log("[dialog:open-folder] handler called");
+    try {
+      const win = electron.BrowserWindow.getFocusedWindow();
+      if (!win) return { success: false, error: "无可用窗口" };
+      const result = await electron.dialog.showOpenDialog(win, {
+        properties: ["openDirectory"]
+      });
+      if (result.canceled || result.filePaths.length === 0) {
+        return { success: false, error: "已取消" };
+      }
+      return { success: true, path: result.filePaths[0] };
     } catch (e) {
       return { success: false, error: e.message };
     }

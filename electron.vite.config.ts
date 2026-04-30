@@ -1,9 +1,12 @@
 import { resolve } from 'path'
+import { readFileSync } from 'fs'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import Components from 'unplugin-vue-components/vite'
 import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers'
+
+const pkg = JSON.parse(readFileSync(resolve('package.json'), 'utf-8'))
 
 export default defineConfig({
 	main: {
@@ -51,7 +54,10 @@ export default defineConfig({
 				'@shared': resolve('shared')
 			}
 		},
-		plugins: [vue(), tailwindcss(), Components({ resolvers: [AntDesignVueResolver({ importStyle: false, resolveIcons: false })] })],
+		define: {
+				__APP_VERSION__: JSON.stringify(pkg.version)
+			},
+			plugins: [vue(), tailwindcss(), Components({ resolvers: [AntDesignVueResolver({ importStyle: false, resolveIcons: false })] })],
 		css: {
 			preprocessorOptions: {
 				less: {

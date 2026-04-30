@@ -29,7 +29,7 @@ let resizeObserver: ResizeObserver | null = null
 const settingsStore = useSettingsStore()
 const { settings } = storeToRefs(settingsStore)
 
-async function createTerminal(): Promise<void> {
+async function createTerminal(cwd?: string): Promise<void> {
     if (!terminalEl.value) return
 
     await settingsStore.fetchSettings()
@@ -41,6 +41,7 @@ async function createTerminal(): Promise<void> {
     }>('terminal:create', {
         cols: 120,
         rows: 30,
+        cwd: cwd || undefined,
         envVars: { ...(props.envVars || {}) },
         shell: settings.value.shell || undefined
     })
@@ -129,12 +130,12 @@ function startClaude(): void {
     terminal.focus()
 }
 
-async function stopClaude(): Promise<void> {
+async function stopClaude(cwd?: string): Promise<void> {
     if (!terminal) return
     claudeRunning.value = false
     destroy()
     await nextTick()
-    await createTerminal()
+    await createTerminal(cwd)
 }
 
 function destroy(): void {

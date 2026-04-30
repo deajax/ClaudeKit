@@ -2,11 +2,6 @@ name: Release
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: 版本号 (例如 0.2.0)
-        required: true
-        type: string
 
 permissions:
   contents: write
@@ -15,26 +10,29 @@ jobs:
   tag:
     runs-on: ubuntu-latest
     outputs:
-      tag: v${{ inputs.version }}
+      tag: ${{ steps.read-version.outputs.tag }}
+      version: ${{ steps.read-version.outputs.version }}
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - uses: actions/checkout@v5
 
-      - name: Bump version and create tag
+      - id: read-version
         run: |
-          VERSION="${VERSION_INPUT#v}"
-          TAG="v$VERSION"
-          npm version "$VERSION" --no-git-tag-version
+          VERSION=$(jq -r '.version' package.json)
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create tag
+        run: |
+          TAG="${{ steps.read-version.outputs.tag }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json
-          git commit -m "chore: bump version to $TAG"
           git tag "$TAG"
-          git push origin "$TAG" --force
+          git push origin "$TAG"
         env:
-          VERSION_INPUT: ${{ inputs.version }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build:
     needs: tag
@@ -130,12 +128,12 @@ jobs:
 
       - name: Update gh-pages download links
         env:
-          V: ${{ inputs.version }}
+          V: ${{ needs.tag.outputs.version }}
         run: |
           git checkout -B gh-pages origin/gh-pages
           OLD=$(grep -oP 'releases/download/v\K[^/]+' index.html | head -1)
           [ -z "$OLD" ] && { echo "ERROR: no version found in index.html"; exit 1; }
-          echo "v${OLD} → v${V}"
+          echo "${OLD} → ${V}"
           sed -i "s|releases/download/v${OLD}|releases/download/v${V}|g" index.html
           sed -i "s|ClaudeKit-${OLD}|ClaudeKit-${V}|g" index.html
           sed -i "s|ClaudeKit.Setup.${OLD}|ClaudeKit.Setup.${V}|g" index.html
@@ -144,6 +142,6 @@ jobs:
           git diff --cached --quiet || {
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git commit -m "chore: update download links to v$V"
+            git commit -m "chore: update download links to ${V}"
             git push origin gh-pages
           }
