@@ -40,7 +40,20 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
-      "Bash(npx vitest *)"
+      "Bash(npx vitest *)",
+      "Bash(git fetch *)",
+      "Bash(echo '# Test index.html')",
+      "Bash(echo 'releases/download/v0.1.2-beta/ClaudeKit-0.1.2-beta.dmg')",
+      "Bash(echo 'releases/download/v0.1.2-beta/ClaudeKit.Setup.0.1.2-beta.exe')",
+      "Bash(sed -i 's|releases/download/v__TRACKED_VAR__|releases/download/v__TRACKED_VAR__|g' /tmp/test_index.html)",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(docker run *)",
+      "Bash(cat)",
+      "Bash(sed -i 's|releases/download/v__TRACKED_VAR__|releases/download/v__TRACKED_VAR__|g' /tmp/test_sed2.html)",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(brew --prefix)",
+      "Bash(git check-ignore *)",
+      "Bash(gh release *)"
     ]
   }
 }
