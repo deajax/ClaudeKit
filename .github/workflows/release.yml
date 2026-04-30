@@ -133,13 +133,13 @@ jobs:
           V: ${{ inputs.version }}
         run: |
           git checkout -B gh-pages origin/gh-pages
-          OLD=$(grep -oP 'releases/download/v\K[^/]+' index.html)
+          OLD=$(grep -oP 'releases/download/v\K[^/]+' index.html | head -1)
           [ -z "$OLD" ] && { echo "ERROR: no version found in index.html"; exit 1; }
-          echo "v$OLD → v$V"
-          sed -i "s|releases/download/v$OLD|releases/download/v$V|g" index.html
-          sed -i "s|ClaudeKit-$OLD|ClaudeKit-$V|g" index.html
-          sed -i "s|ClaudeKit.Setup.$OLD|ClaudeKit.Setup.$V|g" index.html
-          sed -i "s|v$OLD ·|v$V ·|g" index.html
+          echo "v${OLD} → v${V}"
+          sed -i "s|releases/download/v${OLD}|releases/download/v${V}|g" index.html
+          sed -i "s|ClaudeKit-${OLD}|ClaudeKit-${V}|g" index.html
+          sed -i "s|ClaudeKit.Setup.${OLD}|ClaudeKit.Setup.${V}|g" index.html
+          sed -i "s|v${OLD} ·|v${V} ·|g" index.html
           git add index.html
           git diff --cached --quiet || {
             git config user.name "github-actions[bot]"
