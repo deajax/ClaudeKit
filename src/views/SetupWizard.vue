@@ -5,9 +5,9 @@ import { useSettingsStore } from '@/stores/settings'
 import { TypographyParagraph } from 'ant-design-vue'
 import {
     RiTerminalBoxLine,
-    RiStarLine,
-    RiCodeLine,
-    RiRobot2Line,
+    RiNpmjsLine,
+    RiNodejsLine,
+    RiClaudeLine,
     RiSunLine,
     RiMoonLine,
     RiCheckboxCircleLine,
@@ -45,9 +45,9 @@ interface EnvCheckItem {
 }
 
 const envItems = reactive<EnvCheckItem[]>([
-    { name: 'Node.js', key: 'node', version: '', available: false, checking: true, installGuide: h('p', null, ['请访问 ', h('a', { href: 'https://nodejs.org', target: '_blank' }, 'https://nodejs.org'), ' 下载安装 LTS 版本']), icon: RiCodeLine },
-    { name: 'npm', key: 'npm', version: '', available: false, checking: true, installGuide: '安装 Node.js 后自动包含 npm，无需单独安装', icon: RiTerminalBoxLine },
-    { name: 'Claude Code', key: 'claude', version: '', available: false, checking: true, installGuide: h('div', { class: 'paragraph-code' }, [h(TypographyParagraph, { copyable: { text: 'npm install -g @anthropic-ai/claude-code' } }, { default: () => h('pre', 'npm install -g @anthropic-ai/claude-code') }), h('p', { class: 'mt-2' }, '确保 Node.js 已安装后，在终端中执行以上命令。')]), icon: RiRobot2Line }
+    { name: 'Node.js', key: 'node', version: '', available: false, checking: true, installGuide: h('p', null, ['请访问 ', h('a', { href: 'https://nodejs.org', target: '_blank' }, 'https://nodejs.org'), ' 下载安装 LTS 版本']), icon: RiNodejsLine },
+    { name: 'npm', key: 'npm', version: '', available: false, checking: true, installGuide: '安装 Node.js 后自动包含 npm，无需单独安装', icon: RiNpmjsLine },
+    { name: 'Claude Code', key: 'claude', version: '', available: false, checking: true, installGuide: h('div', { class: 'paragraph-code' }, [h(TypographyParagraph, { copyable: { text: 'npm install -g @anthropic-ai/claude-code' } }, { default: () => h('pre', 'npm install -g @anthropic-ai/claude-code') }), h('p', { class: 'mt-2' }, '确保 Node.js 已安装后，在终端中执行以上命令。')]), icon: RiClaudeLine }
 ])
 const envColumns = [
     { title: '检测项目', dataIndex: 'name', key: 'name' },
@@ -285,7 +285,7 @@ onMounted(() => {
                                     <RiTerminalBoxLine />
                                     <span>Shell 类型：{{ shellType || '检测中...' }}</span>
                                 </div>
-                                <a-button size="small" :loading="envChecking" @click="runEnvCheck">
+                                <a-button :loading="envChecking" @click="runEnvCheck">
                                     重新检测
                                 </a-button>
                             </div>

@@ -454,6 +454,32 @@ function writeWithSudo$1(filePath, content) {
     });
   });
 }
+let shellPathCache = null;
+async function getShellPath() {
+  if (shellPathCache) return shellPathCache;
+  if (process.platform === "win32") {
+    shellPathCache = process.env.PATH || "";
+    return shellPathCache;
+  }
+  const shell = process.env.SHELL || "/bin/bash";
+  const shellName = shell.split("/").pop() || "bash";
+  const home = os.homedir();
+  try {
+    const { execSync } = await import("child_process");
+    const userPath = execSync(
+      `${shell} -l -c '. "${home}/.${shellName}rc" 2>/dev/null; echo "KITPATH=$PATH"'`,
+      {
+        encoding: "utf-8",
+        timeout: 5e3
+      }
+    ).trim();
+    const pathMatch = userPath.match(/^KITPATH=(.*)$/m);
+    shellPathCache = pathMatch ? pathMatch[1] : process.env.PATH || "";
+  } catch {
+    shellPathCache = process.env.PATH || "";
+  }
+  return shellPathCache;
+}
 function getDefaultShellConfigPath() {
   if (process.platform === "win32") {
     return path.join(os.homedir(), "Documents", "WindowsPowerShell", "Microsoft.PowerShell_profile.ps1");
@@ -664,7 +690,12 @@ function registerEnvIPC() {
   electron.ipcMain.handle("system:check-claude", async () => {
     try {
       const { execSync } = await import("child_process");
-      const version = execSync("claude --version", { encoding: "utf-8", timeout: 5e3 }).trim();
+      const shellPath = await getShellPath();
+      const version = execSync("claude --version", {
+        encoding: "utf-8",
+        timeout: 5e3,
+        env: { ...process.env, PATH: shellPath }
+      }).trim();
       return { success: true, version };
     } catch {
       return { success: false, version: "未安装" };
@@ -700,7 +731,12 @@ function registerEnvIPC() {
   electron.ipcMain.handle("system:check-node", async () => {
     try {
       const { execSync } = await import("child_process");
-      const version = execSync("node --version", { encoding: "utf-8", timeout: 5e3 }).trim();
+      const shellPath = await getShellPath();
+      const version = execSync("node --version", {
+        encoding: "utf-8",
+        timeout: 5e3,
+        env: { ...process.env, PATH: shellPath }
+      }).trim();
       return { success: true, version };
     } catch {
       return { success: false, version: "未安装" };
@@ -709,7 +745,12 @@ function registerEnvIPC() {
   electron.ipcMain.handle("system:check-npm", async () => {
     try {
       const { execSync } = await import("child_process");
-      const version = execSync("npm --version", { encoding: "utf-8", timeout: 5e3 }).trim();
+      const shellPath = await getShellPath();
+      const version = execSync("npm --version", {
+        encoding: "utf-8",
+        timeout: 5e3,
+        env: { ...process.env, PATH: shellPath }
+      }).trim();
       return { success: true, version };
     } catch {
       return { success: false, version: "未安装" };
@@ -718,7 +759,12 @@ function registerEnvIPC() {
   electron.ipcMain.handle("system:check-git", async () => {
     try {
       const { execSync } = await import("child_process");
-      const version = execSync("git --version", { encoding: "utf-8", timeout: 5e3 }).trim();
+      const shellPath = await getShellPath();
+      const version = execSync("git --version", {
+        encoding: "utf-8",
+        timeout: 5e3,
+        env: { ...process.env, PATH: shellPath }
+      }).trim();
       return { success: true, version };
     } catch {
       return { success: false, version: "未安装" };
@@ -729,9 +775,11 @@ function registerEnvIPC() {
       const { exec } = await import("child_process");
       const { promisify } = await import("util");
       const execAsync = promisify(exec);
+      const shellPath = await getShellPath();
       const { stdout } = await execAsync("npm install -g @anthropic-ai/claude-code", {
         encoding: "utf-8",
-        timeout: 12e4
+        timeout: 12e4,
+        env: { ...process.env, PATH: shellPath }
       });
       return { success: true, output: stdout || "" };
     } catch (e) {

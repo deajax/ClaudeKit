@@ -28,6 +28,42 @@ function writeWithSudo(filePath: string, content: string): Promise<void> {
     })
 }
 
+// ---- 获取用户 login shell 的完整 PATH（打包后 app 从 Finder 启动时 process.env.PATH 不完整） ----
+// macOS 上 `zsh -l` (login shell) 会加载 .zprofile 但不会加载 .zshrc，
+// 而很多用户（nvm、npm global 等）把 PATH 配置在 .zshrc/.bashrc 中，
+// 因此需要显式 source rc 文件。
+let shellPathCache: string | null = null
+
+async function getShellPath(): Promise<string> {
+    if (shellPathCache) return shellPathCache
+
+    if (process.platform === 'win32') {
+        shellPathCache = process.env.PATH || ''
+        return shellPathCache
+    }
+
+    const shell = process.env.SHELL || '/bin/bash'
+    const shellName = shell.split('/').pop() || 'bash'
+    const home = homedir()
+    try {
+        const { execSync } = await import('child_process')
+        // 先以 login shell 启动（加载 .zprofile/.bash_profile），再显式 source rc 文件
+        // 因为 macOS 上 zsh -l 不会加载 .zshrc，而很多用户把 PATH 配置在 rc 文件中
+        const userPath = execSync(
+            `${shell} -l -c '. "${home}/.${shellName}rc" 2>/dev/null; echo "KITPATH=$PATH"'`,
+            {
+                encoding: 'utf-8',
+                timeout: 5000
+            }
+        ).trim()
+        const pathMatch = userPath.match(/^KITPATH=(.*)$/m)
+        shellPathCache = pathMatch ? pathMatch[1] : (process.env.PATH || '')
+    } catch {
+        shellPathCache = process.env.PATH || ''
+    }
+    return shellPathCache
+}
+
 function getDefaultShellConfigPath(): string {
     if (process.platform === 'win32') {
         return join(homedir(), 'Documents', 'WindowsPowerShell', 'Microsoft.PowerShell_profile.ps1')
@@ -278,7 +314,12 @@ export function registerEnvIPC(): void {
     ipcMain.handle('system:check-claude', async () => {
         try {
             const { execSync } = await import('child_process')
-            const version = execSync('claude --version', { encoding: 'utf-8', timeout: 5000 }).trim()
+            const shellPath = await getShellPath()
+            const version = execSync('claude --version', {
+                encoding: 'utf-8',
+                timeout: 5000,
+                env: { ...process.env, PATH: shellPath }
+            }).trim()
             return { success: true, version }
         } catch {
             return { success: false, version: '未安装' }
@@ -318,7 +359,12 @@ export function registerEnvIPC(): void {
     ipcMain.handle('system:check-node', async () => {
         try {
             const { execSync } = await import('child_process')
-            const version = execSync('node --version', { encoding: 'utf-8', timeout: 5000 }).trim()
+            const shellPath = await getShellPath()
+            const version = execSync('node --version', {
+                encoding: 'utf-8',
+                timeout: 5000,
+                env: { ...process.env, PATH: shellPath }
+            }).trim()
             return { success: true, version }
         } catch {
             return { success: false, version: '未安装' }
@@ -329,7 +375,12 @@ export function registerEnvIPC(): void {
     ipcMain.handle('system:check-npm', async () => {
         try {
             const { execSync } = await import('child_process')
-            const version = execSync('npm --version', { encoding: 'utf-8', timeout: 5000 }).trim()
+            const shellPath = await getShellPath()
+            const version = execSync('npm --version', {
+                encoding: 'utf-8',
+                timeout: 5000,
+                env: { ...process.env, PATH: shellPath }
+            }).trim()
             return { success: true, version }
         } catch {
             return { success: false, version: '未安装' }
@@ -340,7 +391,12 @@ export function registerEnvIPC(): void {
     ipcMain.handle('system:check-git', async () => {
         try {
             const { execSync } = await import('child_process')
-            const version = execSync('git --version', { encoding: 'utf-8', timeout: 5000 }).trim()
+            const shellPath = await getShellPath()
+            const version = execSync('git --version', {
+                encoding: 'utf-8',
+                timeout: 5000,
+                env: { ...process.env, PATH: shellPath }
+            }).trim()
             return { success: true, version }
         } catch {
             return { success: false, version: '未安装' }
@@ -353,9 +409,11 @@ export function registerEnvIPC(): void {
             const { exec } = await import('child_process')
             const { promisify } = await import('util')
             const execAsync = promisify(exec)
+            const shellPath = await getShellPath()
             const { stdout } = await execAsync('npm install -g @anthropic-ai/claude-code', {
                 encoding: 'utf-8',
-                timeout: 120000
+                timeout: 120000,
+                env: { ...process.env, PATH: shellPath }
             })
             return { success: true, output: stdout || '' }
         } catch (e) {
