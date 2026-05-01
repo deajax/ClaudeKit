@@ -567,6 +567,7 @@ function registerEnvIPC() {
       }
       const lines = content.split("\n").filter((line) => {
         const trimmed = line.trim();
+        if (trimmed === "# === ClaudeKit — 模型商环境变量 ===") return false;
         if (isPowershell) {
           return !/^\$env:ANTHROPIC_\w+\s*=/.test(trimmed);
         }
@@ -900,6 +901,7 @@ function registerEnvIPC() {
         `reg add "HKCU\\Environment" /v CLAUDE_CODE_GIT_BASH_PATH /t REG_SZ /d "${bashPath}" /f`,
         { encoding: "utf-8", timeout: 5e3, windowsHide: true }
       );
+      process.env.CLAUDE_CODE_GIT_BASH_PATH = bashPath;
       return { success: true, bashPath };
     } catch (e) {
       return { success: false, error: e.message };

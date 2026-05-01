@@ -544,11 +544,14 @@ export function registerEnvIPC(): void {
                 return { success: false, error: '未找到 bash.exe，请确认已安装 Git for Windows' }
             }
 
-            // 写入用户环境变量
+            // 写入用户环境变量（持久化，对新进程生效）
             execSync(
                 `reg add "HKCU\\Environment" /v CLAUDE_CODE_GIT_BASH_PATH /t REG_SZ /d "${bashPath}" /f`,
                 { encoding: 'utf-8', timeout: 5000, windowsHide: true }
             )
+
+            // 同步设置当前进程环境变量，使后续检测立即生效
+            process.env.CLAUDE_CODE_GIT_BASH_PATH = bashPath
 
             return { success: true, bashPath }
         } catch (e) {
