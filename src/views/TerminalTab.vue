@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import 'xterm/css/xterm.css'
+import { getOs } from '@/lib/utils'
 import { useSettingsStore } from '@/stores/settings'
 import { storeToRefs } from 'pinia'
 
@@ -25,6 +26,18 @@ let unsubOutput: (() => void) | null = null
 let unsubExit: (() => void) | null = null
 let currentSessionId = ''
 let resizeObserver: ResizeObserver | null = null
+const isWindows = getOs() === 'win'
+
+function calculateDimensions(): { cols: number; rows: number } {
+    if (!terminalEl.value) return { cols: 80, rows: 24 }
+    const size = settings.value.fontSize || 14
+    const charWidth = size * 0.6
+    const charHeight = size * 1.3
+    return {
+        cols: Math.max(20, Math.floor(terminalEl.value.clientWidth / charWidth)),
+        rows: Math.max(5, Math.floor(terminalEl.value.clientHeight / charHeight))
+    }
+}
 
 const settingsStore = useSettingsStore()
 const { settings } = storeToRefs(settingsStore)
@@ -34,13 +47,15 @@ async function createTerminal(cwd?: string): Promise<void> {
 
     await settingsStore.fetchSettings()
 
+    const dims = calculateDimensions()
+
     const initResult = await window.electronAPI.invoke<{
         success: boolean
         sessionId: string
         error?: string
     }>('terminal:create', {
-        cols: 120,
-        rows: 30,
+        cols: dims.cols,
+        rows: dims.rows,
         cwd: cwd || undefined,
         envVars: { ...(props.envVars || {}) },
         shell: settings.value.shell || undefined
@@ -58,6 +73,10 @@ async function createTerminal(cwd?: string): Promise<void> {
         cursorStyle: 'bar',
         fontSize: settings.value.fontSize,
         fontFamily: settings.value.fontFamily,
+        letterSpacing: 0,
+        lineHeight: 1.1,
+        windowsMode: isWindows,
+        convertEol: true,
         theme: {
             background: settings.value.theme === 'dark' ? '#141414' : '#ffffff',
             foreground: settings.value.theme === 'dark' ? '#d4d4d4' : '#1e293b',
@@ -100,23 +119,27 @@ async function createTerminal(cwd?: string): Promise<void> {
         }
     })
 
-    // Handle resize
+    // Handle resize (debounced to avoid IPC flood during rapid window resizing)
     if (resizeObserver) {
         resizeObserver.disconnect()
     }
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null
     resizeObserver = new ResizeObserver(() => {
-        if (fitAddon && terminal) {
-            fitAddon.fit()
-            const dims = fitAddon.proposeDimensions()
-            if (dims) {
-                window.electronAPI.invoke(
-                    'terminal:resize',
-                    currentSessionId,
-                    dims.cols,
-                    dims.rows
-                )
+        if (resizeTimer) clearTimeout(resizeTimer)
+        resizeTimer = setTimeout(() => {
+            if (fitAddon && terminal) {
+                fitAddon.fit()
+                const dims = fitAddon.proposeDimensions()
+                if (dims) {
+                    window.electronAPI.invoke(
+                        'terminal:resize',
+                        currentSessionId,
+                        dims.cols,
+                        dims.rows
+                    )
+                }
             }
-        }
+        }, 200)
     })
     resizeObserver.observe(terminalEl.value)
 
