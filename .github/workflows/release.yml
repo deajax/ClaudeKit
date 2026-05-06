@@ -29,8 +29,8 @@ jobs:
           TAG="${{ steps.read-version.outputs.tag }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "$TAG"
-          git push origin "$TAG"
+          git tag --force "$TAG"
+          git push origin "$TAG" --force
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
