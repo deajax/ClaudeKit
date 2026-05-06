@@ -44,7 +44,7 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-          - os: windows-latest
+          - os: windows-2022
 
     runs-on: ${{ matrix.os }}
 
@@ -64,15 +64,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Setup MSVC dev environment (Windows)
+      - name: Setup MSVC (Windows)
         if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: microsoft/setup-msbuild@v2
 
       - name: Rebuild native modules for Electron
         run: npm run rebuild
-        env:
-          GYP_MSVS_VERSION: 2022
-          npm_config_msvs_version: 2022
 
       - name: Build frontend + main
         run: npm run build
@@ -84,7 +81,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Package (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         run: npx electron-builder --config --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
