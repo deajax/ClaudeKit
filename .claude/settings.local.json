@@ -55,7 +55,8 @@
       "Bash(git check-ignore *)",
       "Bash(gh release *)",
       "Bash(xargs kill *)",
-      "Bash(./node_modules/.bin/electron --version)"
+      "Bash(./node_modules/.bin/electron --version)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }
