@@ -25,7 +25,7 @@ const isNewProvider = ref(false)
 
 function onAdd(): void {
     isNewProvider.value = true
-    editingProvider.value = { id: generateId(), name: '', icon: '', BASE_URL: '', AUTH_TOKEN: '', model: '', opusModel: '', sonnetModel: '', haikuModel: '', balanceApi: '' }
+    editingProvider.value = { id: generateId(), name: '', icon: '', BASE_URL: '', AUTH_TOKEN: '', model: '', opusModel: '', sonnetModel: '', haikuModel: '', balanceApi: '', apiKeyUrl: '' }
     showEditModal.value = true
 }
 

@@ -283,17 +283,24 @@ function winMinimize(): void { window.electronAPI?.invoke('window:minimize') }
 function winMaximize(): void { window.electronAPI?.invoke('window:maximize') }
 function winClose(): void { window.electronAPI?.invoke('window:close') }
 
+function getDirName(path: string): string {
+    const normalized = path.replace(/[/\\]$/, '')
+    const segments = normalized.split(/[/\\]/)
+    return segments[segments.length - 1] || path
+}
+
 function onOpenProject(cwd: string): void {
     const tabId = activeTabId.value || ''
     const ref = terminalRefs.value[tabId]
     if (!ref) return
 
+    terminalStore.renameTab(tabId, getDirName(cwd))
+    terminalStore.updateCwd(tabId, cwd)
+
     if (ref.claudeRunning) {
-        // Claude 运行中：重启终端到目标目录，终端就绪后自动启动 Claude
         pendingClaudeStart.add(tabId)
         ref.stopClaude?.(cwd)
     } else {
-        // Claude 未运行：cd 到目标目录，下次启动 Claude 时自动在该目录下运行
         ref.sendText?.(`cd "${cwd}"`)
     }
 }
@@ -327,7 +334,20 @@ function onRunTask(task: { id: string; name: string; command: string; cwd: strin
                 :class="os === 'mac' ? 'pl-20!' : ''">
                 <a-tabs v-model:activeKey="activeTabId" type="editable-card" @edit="handleTabEdit"
                     class="tab-bar-theme nodrag-region pt-2! px-2! flex-initial overflow-hidden ">
-                    <a-tab-pane v-for="tab in tabs" :key="tab.id" :tab="tab.title" :closable="tabs.length > 1" />
+                    <a-tab-pane v-for="tab in tabs" :key="tab.id" :closable="false">
+                        <template #tab>
+                            <span class="flex items-center gap-1.5">
+                                {{ tab.title }}
+                                <a-popconfirm v-if="tabs.length > 1"
+                                    title="确定关闭此终端？"
+                                    placement="bottom"
+                                    @confirm="onCloseTab(tab.id)"
+                                >
+                                    <RiCloseFill class="close-icon text-xs opacity-0 group-hover/tab:opacity-50 hover:opacity-100! cursor-pointer rounded-sm" />
+                                </a-popconfirm>
+                            </span>
+                        </template>
+                    </a-tab-pane>
                 </a-tabs>
 
                 <div v-if="os === 'win'" class="ml-auto flex h-full windows-controls nodrag-region">
@@ -357,7 +377,7 @@ function onRunTask(task: { id: string; name: string; command: string; cwd: strin
             <a-layout-content class="terminal-area flex-1 min-h-0 bg-white dark:bg-neutral-900">
                 <div v-for="tab in tabs" :key="tab.id" v-show="tab.id === activeTabId" class="h-full w-full">
                     <TerminalTab :ref="(el: any) => { if (el) terminalRefs[tab.id] = el }" :session-id="tab.id"
-                        :env-vars="tabEnvVars[tab.id]" @ready="(sid: string) => onTerminalReady(sid, tab.id)"
+                        :cwd="tab.cwd" :env-vars="tabEnvVars[tab.id]" @ready="(sid: string) => onTerminalReady(sid, tab.id)"
                         @exit="(sid: string) => onTerminalExit(sid, tab.id)" />
                 </div>
             </a-layout-content>

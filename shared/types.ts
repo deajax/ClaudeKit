@@ -13,6 +13,7 @@ export interface Provider {
     sonnetModel?: string    // ANTHROPIC_DEFAULT_SONNET_MODEL — 覆盖高级模型
     haikuModel?: string     // ANTHROPIC_DEFAULT_HAIKU_MODEL — 覆盖初级模型
     balanceApi?: string
+    apiKeyUrl?: string      // 获取 API Key 的跳转链接
 }
 
 // ---------- 配置集 ----------

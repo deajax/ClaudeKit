@@ -9,6 +9,7 @@ import { storeToRefs } from 'pinia'
 
 const props = defineProps<{
     sessionId: string
+    cwd?: string
     envVars?: Record<string, string>
 }>()
 
@@ -56,7 +57,7 @@ async function createTerminal(cwd?: string): Promise<void> {
     }>('terminal:create', {
         cols: dims.cols,
         rows: dims.rows,
-        cwd: cwd || undefined,
+        cwd: cwd && cwd !== '~' ? cwd : undefined,
         envVars: { ...(props.envVars || {}) },
         shell: settings.value.shell || undefined
     })
@@ -209,13 +210,13 @@ watch(
     (_newEnv, _oldEnv) => {
         if (JSON.stringify(_newEnv) !== JSON.stringify(_oldEnv)) {
             destroy()
-            nextTick(() => createTerminal())
+            nextTick(() => createTerminal(props.cwd))
         }
     }
 )
 
 onMounted(() => {
-    createTerminal()
+    createTerminal(props.cwd)
 })
 
 onUnmounted(() => {
@@ -238,7 +239,7 @@ defineExpose({
 <template>
     <div class="terminal-wrapper flex flex-col h-full w-full">
         <!-- xterm 容器 -->
-        <div ref="terminalEl" class="terminal-el flex-1 min-h-0 px-2 py-1" />
+        <div ref="terminalEl" class="terminal-el flex-1 min-h-0 p-3" />
     </div>
 </template>
 

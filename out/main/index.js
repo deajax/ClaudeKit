@@ -144,7 +144,8 @@ const BUILTIN_PROVIDERS = [
     opusModel: "qwen3.6-max-preview",
     sonnetModel: "qwen3.6-flash",
     haikuModel: "qwen3-coder-next",
-    balanceApi: "https://business.aliyuncs.com/?Action=QueryAccountBalance&Version=2017-12-14"
+    balanceApi: "https://business.aliyuncs.com/?Action=QueryAccountBalance&Version=2017-12-14",
+    apiKeyUrl: "https://bailian.console.aliyun.com/?apiKey=1#/api-key"
   },
   {
     name: "DeepSeek",
@@ -155,7 +156,8 @@ const BUILTIN_PROVIDERS = [
     opusModel: "deepseek-v4-pro",
     sonnetModel: "deepseek-v4-flash",
     haikuModel: "deepseek-reasoner",
-    balanceApi: "https://api.deepseek.com/user/balance"
+    balanceApi: "https://api.deepseek.com/user/balance",
+    apiKeyUrl: "https://platform.deepseek.com/api_keys"
   },
   {
     name: "OpenRouter",
@@ -166,7 +168,8 @@ const BUILTIN_PROVIDERS = [
     opusModel: "anthropic/claude-opus-4.7",
     sonnetModel: "openai/gpt-5.5",
     haikuModel: "google/gemini-3.1-pro-preview",
-    balanceApi: "https://openrouter.ai/api/v1/credits"
+    balanceApi: "https://openrouter.ai/api/v1/credits",
+    apiKeyUrl: "https://openrouter.ai/keys"
   },
   {
     name: "硅基流动",
@@ -176,7 +179,8 @@ const BUILTIN_PROVIDERS = [
     model: "Qwen/Qwen3-8B",
     opusModel: "Pro/zai-org/GLM-5.1",
     sonnetModel: "Pro/moonshotai/Kimi-K2.6",
-    haikuModel: "MiniMaxAI/MiniMax-M2.5"
+    haikuModel: "MiniMaxAI/MiniMax-M2.5",
+    apiKeyUrl: "https://cloud.siliconflow.cn/account/ak"
   },
   {
     name: "Kimi 月之暗面",
@@ -187,7 +191,8 @@ const BUILTIN_PROVIDERS = [
     opusModel: "kimi-k2.6",
     sonnetModel: "kimi-k2.5",
     haikuModel: "",
-    balanceApi: "https://api.moonshot.cn/v1/users/me/balance"
+    balanceApi: "https://api.moonshot.cn/v1/users/me/balance",
+    apiKeyUrl: "https://kimi.moonshot.cn/console/api-keys"
   }
 ];
 const BUILTIN_TASKS = [
@@ -261,6 +266,22 @@ function initDataDir() {
       ...t
     }));
     writeJSON(DB_FILES.TASKS, tasks);
+  }
+  if (fs.existsSync(providersPath)) {
+    const providers = readJSON(DB_FILES.PROVIDERS);
+    let needsUpdate = false;
+    for (const p of providers) {
+      if (!p.apiKeyUrl && p.key) {
+        const builtin = BUILTIN_PROVIDERS.find((b) => b.key === p.key);
+        if (builtin?.apiKeyUrl) {
+          p.apiKeyUrl = builtin.apiKeyUrl;
+          needsUpdate = true;
+        }
+      }
+    }
+    if (needsUpdate) {
+      writeJSON(DB_FILES.PROVIDERS, providers);
+    }
   }
   ensureFile(DB_FILES.PROFILES, []);
   ensureFile(DB_FILES.ENV, {});

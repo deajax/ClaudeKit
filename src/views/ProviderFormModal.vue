@@ -34,6 +34,7 @@ const formModel = reactive({
     sonnet: '',
     haiku: '',
     balanceApi: '',
+    apiKeyUrl: '',
 })
 
 function resetForm(): void {
@@ -47,6 +48,7 @@ function resetForm(): void {
     formModel.sonnet = ''
     formModel.haiku = ''
     formModel.balanceApi = ''
+    formModel.apiKeyUrl = ''
     testStatus.value = 'idle'
     testErrorMsg.value = ''
     fileList.value = []
@@ -63,6 +65,7 @@ function populateForm(p: Provider & { id: string }): void {
     formModel.sonnet = p.sonnetModel ?? ''
     formModel.haiku = p.haikuModel ?? ''
     formModel.balanceApi = p.balanceApi ?? ''
+    formModel.apiKeyUrl = p.apiKeyUrl ?? ''
     testStatus.value = 'idle'
     testErrorMsg.value = ''
     fileList.value = p.icon
@@ -177,6 +180,7 @@ function onSave(): void {
         sonnetModel: formModel.sonnet || undefined,
         haikuModel: formModel.haiku || undefined,
         balanceApi: formModel.balanceApi || undefined,
+        apiKeyUrl: formModel.apiKeyUrl || undefined,
     }
     emit('save', data, testStatus.value === 'success')
 }
@@ -204,9 +208,18 @@ function onClose(): void {
             <a-form-item label="Base URL" name="baseUrl">
                 <a-input v-model:value="formModel.baseUrl" placeholder="https://api.deepseek.com/anthropic" />
             </a-form-item>
-            <a-form-item label="API key" name="authToken"
+            <a-form-item name="authToken"
                 :validate-status="testStatus === 'success' ? 'success' : testStatus === 'fail' ? 'error' : ''"
                 :help="testStatus === 'success' ? '通过' : testStatus === 'fail' ? testErrorMsg : ''">
+                <template #label>
+                    <a-flex align="center" gap="small" wrap="wrap">
+                        <span>API Key</span>
+                        <a v-if="formModel.apiKeyUrl" :href="formModel.apiKeyUrl" target="_blank"
+                            class="text-xs text-blue-500 hover:text-blue-600 no-underline! whitespace-nowrap">
+                            获取 API Key →
+                        </a>
+                    </a-flex>
+                </template>
                 <div class="flex gap-2">
                     <a-input v-model:value="formModel.authToken" placeholder="sk-xxxx" class="flex-1" />
                     <a-button :loading="testStatus === 'testing'" @click="testConnectivity">

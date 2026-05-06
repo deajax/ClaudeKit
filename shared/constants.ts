@@ -13,6 +13,7 @@ export const BUILTIN_PROVIDERS: Omit<Provider, 'AUTH_TOKEN'>[] = [
         sonnetModel: 'qwen3.6-flash',
         haikuModel: 'qwen3-coder-next',
         balanceApi: 'https://business.aliyuncs.com/?Action=QueryAccountBalance&Version=2017-12-14',
+        apiKeyUrl: 'https://bailian.console.aliyun.com/?apiKey=1#/api-key',
     },
     {
         name: 'DeepSeek',
@@ -23,7 +24,8 @@ export const BUILTIN_PROVIDERS: Omit<Provider, 'AUTH_TOKEN'>[] = [
         opusModel: 'deepseek-v4-pro',
         sonnetModel: 'deepseek-v4-flash',
         haikuModel: 'deepseek-reasoner',
-        balanceApi: 'https://api.deepseek.com/user/balance'
+        balanceApi: 'https://api.deepseek.com/user/balance',
+        apiKeyUrl: 'https://platform.deepseek.com/api_keys',
     },
     {
         name: 'OpenRouter',
@@ -34,7 +36,8 @@ export const BUILTIN_PROVIDERS: Omit<Provider, 'AUTH_TOKEN'>[] = [
         opusModel: 'anthropic/claude-opus-4.7',
         sonnetModel: 'openai/gpt-5.5',
         haikuModel: 'google/gemini-3.1-pro-preview',
-        balanceApi: 'https://openrouter.ai/api/v1/credits'
+        balanceApi: 'https://openrouter.ai/api/v1/credits',
+        apiKeyUrl: 'https://openrouter.ai/keys',
     },
     {
         name: '硅基流动',
@@ -44,7 +47,8 @@ export const BUILTIN_PROVIDERS: Omit<Provider, 'AUTH_TOKEN'>[] = [
         model: 'Qwen/Qwen3-8B',
         opusModel: 'Pro/zai-org/GLM-5.1',
         sonnetModel: 'Pro/moonshotai/Kimi-K2.6',
-        haikuModel: 'MiniMaxAI/MiniMax-M2.5'
+        haikuModel: 'MiniMaxAI/MiniMax-M2.5',
+        apiKeyUrl: 'https://cloud.siliconflow.cn/account/ak',
     },
     {
         name: 'Kimi 月之暗面',
@@ -55,7 +59,8 @@ export const BUILTIN_PROVIDERS: Omit<Provider, 'AUTH_TOKEN'>[] = [
         opusModel: 'kimi-k2.6',
         sonnetModel: 'kimi-k2.5',
         haikuModel: '',
-        balanceApi: 'https://api.moonshot.cn/v1/users/me/balance'
+        balanceApi: 'https://api.moonshot.cn/v1/users/me/balance',
+        apiKeyUrl: 'https://kimi.moonshot.cn/console/api-keys',
     }
 ]
 

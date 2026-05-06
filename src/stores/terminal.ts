@@ -25,11 +25,11 @@ export const useTerminalStore = defineStore('terminal', () => {
     async function persist(): Promise<void> {
         try {
             await saveTerminalData({
-                tabs: tabs.value,
+                tabs: tabs.value.map(t => ({ ...t })),
                 activeTabId: activeTabId.value
             })
-        } catch {
-            // 静默失败
+        } catch (e) {
+            console.error('[terminalStore] persist error:', e)
         }
     }
 

@@ -53,7 +53,9 @@
       "Bash(echo \"Exit: $?\")",
       "Bash(brew --prefix)",
       "Bash(git check-ignore *)",
-      "Bash(gh release *)"
+      "Bash(gh release *)",
+      "Bash(xargs kill *)",
+      "Bash(./node_modules/.bin/electron --version)"
     ]
   }
 }

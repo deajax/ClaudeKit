@@ -72,6 +72,24 @@ export function initDataDir(): void {
         writeJSON(DB_FILES.TASKS, tasks)
     }
 
+    // 迁移：补全已有 provider 中缺失的 apiKeyUrl
+    if (existsSync(providersPath)) {
+        const providers = readJSON(DB_FILES.PROVIDERS) as (Record<string, unknown> & { key?: string })[]
+        let needsUpdate = false
+        for (const p of providers) {
+            if (!p.apiKeyUrl && p.key) {
+                const builtin = BUILTIN_PROVIDERS.find(b => b.key === p.key)
+                if (builtin?.apiKeyUrl) {
+                    p.apiKeyUrl = builtin.apiKeyUrl
+                    needsUpdate = true
+                }
+            }
+        }
+        if (needsUpdate) {
+            writeJSON(DB_FILES.PROVIDERS, providers)
+        }
+    }
+
     ensureFile(DB_FILES.PROFILES, [])
     ensureFile(DB_FILES.ENV, {})
     ensureFile(DB_FILES.TERMINAL, { tabs: [], activeTabId: '' })

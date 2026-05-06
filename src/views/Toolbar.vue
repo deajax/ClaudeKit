@@ -13,6 +13,7 @@ import {
     RiLightbulbLine,
     RiInformationLine,
     RiFolderOpenLine,
+    RiMoreFill
 } from '@remixicon/vue'
 
 const props = withDefaults(defineProps<{
@@ -112,21 +113,24 @@ onMounted(async () => {
         </a-button>
 
         <a-space class="ml-auto">
-            <!-- Claude 控制按钮 -->
-            <a-button :icon="h(RiPlayFill)" :type="claudeRunning ? 'default' : 'primary'" :disabled="claudeRunning"
-                @click="emit('startClaude')">
-                运行 Claude
-            </a-button>
-            <a-button v-if="claudeRunning" :icon="h(RiStopFill)" danger @click="emit('stopClaude')" />
-            <a-divider type="vertical"></a-divider>
             <!-- 打开项目 -->
             <a-button :icon="h(RiFolderOpenLine)" class="h-7 text-xs" @click="onOpenProject">
                 打开项目
             </a-button>
-            <!-- 运行任务按钮 -->
-            <a-button class="h-7 text-xs" @click="emit('openTaskDrawer')">
-                运行任务
-            </a-button>
+
+            <a-divider type="vertical"></a-divider>
+
+            <a-button-group>
+                <!-- Claude 控制按钮 -->
+                <a-button v-if="claudeRunning" :icon="h(RiStopFill)" danger @click="emit('stopClaude')" class="z-10!">
+                    停止运行
+                </a-button>
+                <a-button v-else :icon="h(RiPlayFill)" :disabled="claudeRunning" @click="emit('startClaude')">
+                    运行 Claude
+                </a-button>
+                <!-- 运行任务按钮 -->
+                <a-button :icon="h(RiMoreFill)" @click="emit('openTaskDrawer')" />
+            </a-button-group>
         </a-space>
     </a-flex>
 </template>
