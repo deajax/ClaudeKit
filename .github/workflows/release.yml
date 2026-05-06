@@ -2,10 +2,6 @@ name: Release
 
 on:
   workflow_dispatch:
-    inputs:
-      changelog:
-        description: '更新日志内容'
-        required: true
 
 permissions:
   contents: write
@@ -27,30 +23,6 @@ jobs:
           VERSION=$(jq -r '.version' package.json)
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Update CHANGELOG.md
-        env:
-          CHANGELOG_INPUT: ${{ github.event.inputs.changelog }}
-        run: |
-          DATE=$(date '+%Y-%m-%d')
-          TAG="${{ steps.read-version.outputs.tag }}"
-          # 保留旧内容（跳过 # Changelog 标题行）
-          EXISTING=$(tail -n +3 CHANGELOG.md 2>/dev/null || echo "")
-          # 构建完整文件
-          {
-            echo "# Changelog"
-            echo ""
-            echo "## $TAG ($DATE)"
-            echo ""
-            echo "$CHANGELOG_INPUT"
-            echo ""
-            echo "$EXISTING"
-          } > CHANGELOG.md
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md
-          git commit -m "chore: update changelog for $TAG"
-          git push origin main
 
       - name: Create tag
         run: |
